@@ -13,6 +13,26 @@ Config.seeds[#Config.seeds + 1] = {
     id = 'burgershot',
     label = 'Burger Shot',
     job = 'burgershot',
+
+    -- Optional, and seed-only: the job this business needs, registered at boot
+    -- if -- and ONLY if -- no job by that name exists yet. Stock qbcore ships
+    -- police, ambulance, mechanic and tow; without this a shipped example would
+    -- land on a job list that has never heard of it and sit there inert, with
+    -- no grades to make anyone a boss and a job lock matching nobody. A server
+    -- that defines its own `burgershot` always wins.
+    jobDefinition = {
+        label = 'Burger Shot',
+        type = 'civ',
+        defaultDuty = false,
+        offDutyPay = false,
+        grades = {
+            { name = 'Trainee', payment = 30 },
+            { name = 'Cook', payment = 45 },
+            { name = 'Shift Lead', payment = 60 },
+            { name = 'Manager', payment = 85, isboss = true },
+        },
+    },
+
     modules = {
         {
             -- The perimeter. Entering it builds every module below and clocks

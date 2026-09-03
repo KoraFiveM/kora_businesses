@@ -118,3 +118,25 @@ Config.shopItems['burgershot'] = {
     { item = 'sprunk' },              -- allowed, priced by whoever stocks it
 }
 ```
+
+## Seeds
+
+A file in `shared/businesses/` appends to `Config.seeds`. Each entry is an
+ordinary business definition, plus one seed-only extra:
+
+```lua
+Config.seeds[#Config.seeds + 1] = {
+    id = 'burgershot', label = 'Burger Shot', job = 'burgershot',
+    jobDefinition = {                      -- optional, seed-only
+        label = 'Burger Shot', type = 'civ',
+        grades = { { name = 'Trainee', payment = 30 }, { name = 'Manager', payment = 85, isboss = true } },
+    },
+    modules = { ... },
+}
+```
+
+The **business** is inserted only when no row with that id exists — deleting or
+editing it in-game always wins. The **job** is a separate matter: qbcore's job
+registry is in-memory and rebuilt from its own seed files each start, so it is
+re-checked on every boot and registered whenever the name is absent. A server
+that defines its own `burgershot` keeps it.

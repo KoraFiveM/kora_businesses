@@ -97,6 +97,18 @@ local persist = state:match('function State%.persist.-\nend')
 H.ok(persist and persist:find('writeErr then return nil', 1, true),
     'a failed database write does not update the live registry')
 
+-- --- seed jobs -------------------------------------------------------------
+--
+-- qbcore's shared registries are in-memory and rebuilt from its own seed files
+-- on every start. Registering a seed's job inside the first-boot business
+-- insert would therefore leave it missing on every boot after the first, and
+-- the business would silently go inert.
+local load_ = state:match('function State%.load.-\nend')
+local jobLoop = load_ and load_:find('registerShared', 1, true)
+local businessLoop = load_ and load_:find('not State.businesses[id]', 1, true)
+H.ok(jobLoop and businessLoop, 'State.load both registers seed jobs and inserts seed businesses')
+H.ok(jobLoop < businessLoop, 'seed jobs are registered outside (and before) the first-boot insert')
+
 -- --- luac safety -----------------------------------------------------------
 --
 -- A BARE backtick outside a string is CFX's GetHashKey sugar and breaks stock

@@ -66,6 +66,23 @@ end
 H.ok(#Config.seeds > 0, 'seeds were registered')
 
 for _, seed in ipairs(Config.seeds) do
+    -- A seed may ship the job it needs. If it does, that definition has to be
+    -- something qbcore's registry will actually accept -- a job with no boss
+    -- grade produces a business nobody can ever manage.
+    if seed.jobDefinition then
+        local definition = seed.jobDefinition
+        H.ok(type(definition.label) == 'string', ('seed %s job has a label'):format(tostring(seed.id)))
+        H.ok(type(definition.grades) == 'table' and #definition.grades > 0,
+            ('seed %s job has grades'):format(tostring(seed.id)))
+        local boss = false
+        for _, grade in ipairs(definition.grades) do
+            H.ok(type(grade.name) == 'string', ('seed %s job grades are named'):format(tostring(seed.id)))
+            H.ok((tonumber(grade.payment) or -1) >= 0, ('seed %s job grades pay'):format(tostring(seed.id)))
+            if grade.isboss then boss = true end
+        end
+        H.ok(boss, ('seed %s job has a boss grade'):format(tostring(seed.id)))
+    end
+
     local business, err = S.normaliseBusiness(seed)
     H.ok(business, ('seed %s validates: %s'):format(tostring(seed.id), tostring(err)))
     H.equal(#business.rejected, 0, ('seed %s has no rejected modules'):format(business.id))

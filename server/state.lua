@@ -186,9 +186,29 @@ function State.load()
         end
     end
 
-    -- Seeds are first-boot only. An admin who deleted or moved a seeded till
-    -- in-game must not have it silently resurrected on the next restart, so the
-    -- guard is on the business id existing at all, not on its contents.
+    -- A seed may carry the job it needs. Without this a shipped example lands on
+    -- a server whose job list has never heard of it and sits there inert: no
+    -- grade means no boss, and the job lock matches nobody.
+    --
+    -- This runs EVERY boot, unlike the business insert below. qbcore's shared
+    -- registries are in-memory and rebuilt from its own seed files each start,
+    -- so registering once alongside the first business insert would leave the
+    -- job missing on every subsequent boot. The `not jobDefinition` guard is
+    -- what keeps it safe to repeat, and it means a server that defines its own
+    -- version of the job always wins.
+    for _, seed in ipairs(Config.seeds or {}) do
+        local job = type(seed.job) == 'string' and seed.job:lower() or nil
+        if seed.jobDefinition and job and not State.jobDefinition(job) then
+            local ok, err = exports.qbcore:registerShared('jobs', job, seed.jobDefinition)
+            if ok then print(('^2[qbbusinesses]^7 registered seed job %s'):format(job))
+            else print(('^3[qbbusinesses]^7 could not register seed job %s: %s'):format(job, tostring(err))) end
+        end
+    end
+
+    -- Seeded businesses themselves are first-boot only. An admin who deleted or
+    -- moved a seeded till in-game must not have it silently resurrected on the
+    -- next restart, so the guard is on the business id existing at all, not on
+    -- its contents.
     for _, seed in ipairs(Config.seeds or {}) do
         local id = S.slug(seed.id or seed.label)
         if id and not State.businesses[id] then
@@ -199,6 +219,13 @@ function State.load()
     end
 
     for _, business in pairs(State.businesses) do
+        -- An unknown job is not fatal -- the business still exists and can be
+        -- reassigned in-game -- but nothing job-locked in it will ever appear,
+        -- which is worth saying out loud rather than leaving to be discovered.
+        if not State.jobDefinition(business.job) then
+            print(('^3[qbbusinesses]^7 %s is assigned to job "%s", which is not registered; its job-locked modules will not appear.')
+                :format(business.id, business.job))
+        end
         QbBusinesses.register.business(business)
     end
     return true
