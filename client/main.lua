@@ -16,6 +16,8 @@ local RESOURCE = GetCurrentResourceName()
 
 ---@type table<string, table> businessId -> live Business
 local live = {}
+local hydrating = false
+local lastPresenceJob = nil
 
 ---@param definitions table[]
 local function apply(definitions)
@@ -56,6 +58,14 @@ end)
 ---A job change does not move any zone, but it does change what the player may
 ---see and whether they should be clocked in where they are standing.
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
+    -- qbcore can emit the compatibility job event more than once for one
+    -- replicated change. Presence only depends on the job name, so repeating
+    -- the same transition would send identical enter/leave callbacks for every
+    -- business the player is standing in and eventually trip their rate limit.
+    local jobName = Client.job().name
+    if jobName == lastPresenceJob then return end
+    lastPresenceJob = jobName
+
     CreateThread(function()
         for _, business in pairs(live) do
             if business.inside then
@@ -67,12 +77,19 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
 end)
 
 local function hydrate()
+    -- Login, job, and duty events can all be delivered as the client mirror
+    -- settles. One hydrate contains the complete snapshot, so concurrent
+    -- requests only duplicate work and can consume the server callback quota.
+    if hydrating then return false end
+    hydrating = true
     local data = QB.callback.trigger('qbbusinesses:server:hydrate')
-    if type(data) ~= 'table' then return false end
-    Creator.setAdmin(data.admin)
-    Client.staff = data.staff or {}
-    apply(data.businesses)
-    return data.ready == true
+    if type(data) == 'table' then
+        Creator.setAdmin(data.admin)
+        Client.staff = data.staff or {}
+        apply(data.businesses)
+    end
+    hydrating = false
+    return type(data) == 'table' and data.ready == true
 end
 
 CreateThread(function()
