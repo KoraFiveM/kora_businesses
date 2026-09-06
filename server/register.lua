@@ -25,10 +25,43 @@ local stashes = {}
 
 local handlers = {}
 
+local function addBoundary(record, module)
+    local coords, distance = State.moduleBoundary(module)
+    record.coords = record.coords or {}
+    for _, point in ipairs(coords) do
+        local duplicate = false
+        for _, existing in ipairs(record.coords) do
+            if existing.x == point.x and existing.y == point.y and existing.z == point.z then
+                existing.distance = math.max(existing.distance or 0, distance)
+                duplicate = true
+                break
+            end
+        end
+        if not duplicate then
+            record.coords[#record.coords + 1] = {
+                x = point.x, y = point.y, z = point.z, w = point.w, distance = distance,
+            }
+        end
+    end
+    record.distance = math.max(record.distance or 0, distance)
+end
+
 handlers.Stash = function(business, module)
-    stashes[module.id] = { businessId = business.id, module = module }
-    exports.qbinventory:RegisterStash(module.id, module.label or business.label, module.slots, module.weight,
-        false, module.public and nil or { [business.job] = 0 })
+    local record = stashes[module.id]
+    if record and record.businessId ~= business.id then
+        return print(('^3[qbbusinesses]^7 stash id "%s" is used by both %s and %s; keeping %s'):format(
+            module.id, record.businessId, business.id, record.businessId))
+    end
+    if not record then
+        record = { businessId = business.id, module = module, coords = {}, distance = 0 }
+        stashes[module.id] = record
+    elseif record.module.public ~= module.public then
+        print(('^3[qbbusinesses]^7 stash id "%s" has conflicting access across modules'):format(module.id))
+    end
+    addBoundary(record, module)
+    exports.qbinventory:RegisterStash(module.id, record.module.label or business.label,
+        record.module.slots, record.module.weight, false,
+        record.module.public and nil or { [business.job] = 0 }, record.coords, record.distance)
 end
 
 handlers.POS = function(business, module)
@@ -47,7 +80,25 @@ handlers.UseableItem = function(business, module)
 end
 
 ---@param business table
+function Register.removeBusiness(business)
+    -- Rebuild this business's registry slice so moved modules replace their old
+    -- coordinate policy and removed stashes fail closed. Inventory contents are
+    -- retained by qbinventory when an id is re-registered.
+    for id, record in pairs(stashes) do
+        if record.businessId == business.id then
+            exports.qbinventory:RegisterStash(id, record.module.label or business.label,
+                record.module.slots, record.module.weight, false,
+                record.module.public and nil or { [business.job] = 0 }, {}, record.distance)
+            stashes[id] = nil
+        end
+    end
+    Pos.resetBusiness(business.id)
+end
+
+---@param business table
 function Register.business(business)
+    Register.removeBusiness(business)
+
     for _, module in ipairs(business.modules) do
         local handler = handlers[module.moduleType]
         if handler then

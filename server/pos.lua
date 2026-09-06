@@ -145,6 +145,40 @@ end
 -- Registration
 -- ---------------------------------------------------------------------------
 
+local function addBoundary(record, module)
+    local coords, distance = State.moduleBoundary(module)
+    record.coords = record.coords or {}
+    for _, point in ipairs(coords) do
+        local duplicate = false
+        for _, existing in ipairs(record.coords) do
+            if existing.x == point.x and existing.y == point.y and existing.z == point.z then
+                existing.distance = math.max(existing.distance or 0, distance)
+                duplicate = true
+                break
+            end
+        end
+        if not duplicate then
+            record.coords[#record.coords + 1] = {
+                x = point.x, y = point.y, z = point.z, w = point.w, distance = distance,
+            }
+        end
+    end
+    record.distance = math.max(record.distance or 0, distance)
+end
+
+---@param businessId string
+function Pos.resetBusiness(businessId)
+    for id, record in pairs(shops) do
+        if record.businessId == businessId then
+            local business = State.get(businessId)
+            exports.qbinventory:RegisterStash(stockId(id), (record.module.label or (business and business.label) or id) .. ' Stock',
+                record.module.stockSlots, Config.pos.stockWeight, false,
+                business and { [business.job] = 0 } or {}, {}, record.distance)
+            shops[id] = nil
+        end
+    end
+end
+
 ---Two till modules may deliberately share one shop id (a row of registers).
 ---The first registration owns the policy; a later one that disagrees is a
 ---config mistake worth naming rather than silently resolving.
@@ -159,35 +193,46 @@ function Pos.register(business, module)
         elseif existing.module.commission ~= module.commission or existing.module.tax ~= module.tax then
             print(('^3[qbbusinesses]^7 till id "%s" has conflicting commission/tax across modules'):format(module.id))
         end
-        return
     end
 
-    local fixed, restricted = fixedPrices(module)
-    shops[module.id] = {
-        businessId = business.id, module = module, fixed = fixed, restricted = restricted,
-    }
+    if existing and existing.businessId ~= business.id then return end
+    local record = existing
+    if not record then
+        local fixed, restricted = fixedPrices(module)
+        record = {
+            businessId = business.id, module = module, fixed = fixed, restricted = restricted,
+            coords = {}, distance = 0,
+        }
+        shops[module.id] = record
+    end
+    addBoundary(record, module)
 
     local function shopAccess(src)
         local record = shops[module.id]
         if not record then return false, 'this till is closed' end
+        local currentBusiness = State.get(record.businessId)
+        if not currentBusiness then return false, 'this business is closed' end
         if not record.module.hideWhenStaffed then return true end
-        if State.worksFor(src, business.job) then return true end
-        if Staff.countFor(business.id) > 0 then return false, 'a member of staff will serve you' end
+        if State.worksFor(src, currentBusiness.job) then return true end
+        if Staff.countFor(currentBusiness.id) > 0 then return false, 'a member of staff will serve you' end
         return true
     end
 
     exports.qbinventory:RegisterShop(module.id, {
-        label = module.label or business.label,
-        slots = module.shopSlots,
+        label = record.module.label or business.label,
+        slots = record.module.shopSlots,
         maxWeight = Config.pos.shopWeight,
-        currency = module.currency,
+        currency = record.module.currency,
+        coords = record.coords,
+        distance = record.distance,
         access = shopAccess,
     })
 
     -- Job-locked: the intake stash is where unsold company goods sit, so it is
     -- staff-only regardless of the till's own `public` flag.
-    exports.qbinventory:RegisterStash(stockId(module.id), (module.label or business.label) .. ' Stock',
-        module.stockSlots, Config.pos.stockWeight, false, { [business.job] = 0 })
+    exports.qbinventory:RegisterStash(stockId(module.id), (record.module.label or business.label) .. ' Stock',
+        record.module.stockSlots, Config.pos.stockWeight, false, { [business.job] = 0 },
+        record.coords, record.distance)
 end
 
 ---@param shopId any
@@ -221,10 +266,16 @@ local function sameInfo(a, b)
     return true
 end
 
-local function slotFor(items, name, info, price, slots)
+local function stockerFor(item)
+    local businessData = item and item.serverData and item.serverData.qbbusinesses
+    return type(businessData) == 'table' and businessData.stocker or nil
+end
+
+local function slotFor(items, name, info, price, stocker, slots)
     for slot = 1, slots do
         local existing = items[slot]
-        if existing and existing.name == name and existing.price == price and sameInfo(existing.info, info) then
+        if existing and existing.name == name and existing.price == price
+            and stockerFor(existing) == stocker and sameInfo(existing.info, info) then
             return slot
         end
     end
@@ -247,9 +298,13 @@ function Pos.intake(src, shopId)
     if not record or intaking[shopId] then return end
     local business, module = Pos.context(shopId)
     if not business then return end
+    local allowed = State.employeeAt(src, business, record)
+    if not allowed then return end
     -- Closing an inventory by disconnecting also fires sessionClosed. Asking a
     -- player who is gone for a price would just burn the callback timeout.
-    if not exports.qbcore:getPlayerData(src) then return end
+    local player = exports.qbcore:getPlayerData(src)
+    if not player then return end
+    local stocker = type(player.citizenid) == 'string' and player.citizenid or nil
 
     local staged = exports.qbinventory:GetStashItems(stockId(shopId)) or {}
     if not next(staged) then return end
@@ -286,13 +341,19 @@ function Pos.intake(src, shopId)
     for slot, item in pairs(remaining) do
         local price = prices[item.name]
         if price then
-            local target = slotFor(shelf, item.name, item.info, price, module.shopSlots)
+            local target = slotFor(shelf, item.name, item.info, price, stocker, module.shopSlots)
             if target then
                 local existing = shelf[target]
                 shelf[target] = {
                     name = item.name,
                     amount = (existing and existing.amount or 0) + item.amount,
                     info = item.info, price = price,
+                    -- Durable, server-only attribution. qbinventory strips this
+                    -- from views and purchased item metadata, but returns it in
+                    -- the committed purchase audit for post-sale commission.
+                    serverData = existing and existing.serverData or {
+                        qbbusinesses = { business = business.id, shop = shopId, stocker = stocker },
+                    },
                 }
                 remaining[slot] = nil
                 moved[item.name] = (moved[item.name] or 0) + item.amount
@@ -330,42 +391,24 @@ function Pos.intake(src, shopId)
     for name, amount in pairs(moved) do summary[#summary + 1] = ('%dx %s'):format(amount, name) end
     table.sort(summary)
 
-    local commission = math.floor(commissionBase * (module.commission / 100))
-    if commission > 0 then
-        local paid = Pos.debit(business.job, commission, 'stocking commission')
-        if paid then
-            exports.qbcore:addMoney(src, 'cash', commission, 'qbbusinesses-stock-commission')
-            QB.notify.send(src, {
-                title = Config.notifyTitle,
-                message = ('Stocked %s. Commission: $%d'):format(table.concat(summary, ', '), commission),
-                type = 'success',
-            })
-        else
-            commission = 0
-            QB.notify.send(src, {
-                title = Config.notifyTitle,
-                message = ('Stocked %s. The business could not cover your commission.'):format(table.concat(summary, ', ')),
-                type = 'warning',
-            })
-        end
-    else
-        QB.notify.send(src, {
-            title = Config.notifyTitle,
-            message = ('Stocked %s.'):format(table.concat(summary, ', ')),
-            type = 'success',
-        })
-    end
+    QB.notify.send(src, {
+        title = Config.notifyTitle,
+        message = module.commission > 0
+            and ('Stocked %s. Commission is paid as this stock sells.'):format(table.concat(summary, ', '))
+            or ('Stocked %s.'):format(table.concat(summary, ', ')),
+        type = 'success',
+    })
 
     if next(rejected) then
         QB.notify.send(src, { title = Config.notifyTitle, message = 'Some items were left behind: this till does not stock them.', type = 'warning' })
     end
 
     Logs.record(business, {
-        category = 'stock', src = src, amount = commission, webhook = module.webhook,
+        category = 'stock', src = src, webhook = module.webhook,
         message = ('Stocked %s into %s.'):format(table.concat(summary, ', '), module.label or shopId),
         fields = {
             { name = 'Retail value', value = ('$%d'):format(commissionBase), inline = true },
-            { name = 'Commission', value = ('$%d'):format(commission), inline = true },
+            { name = 'Commission paid', value = '$0 (pending sale)', inline = true },
         },
     })
 end
@@ -409,12 +452,41 @@ AddEventHandler('qbinventory:server:audit', function(action, src, details)
         print(('^3[qbbusinesses]^7 could not credit %s for a sale: %s'):format(business.job, tostring(err)))
     end
 
+    -- Commission is released only after qbinventory has committed payment,
+    -- stock removal and item delivery. Attribution is server-only data attached
+    -- at intake, never an employee-supplied price or a client field.
+    local commission = 0
+    local attribution = details.serverData and details.serverData.qbbusinesses
+    if ok and type(attribution) == 'table' and attribution.business == business.id
+        and attribution.shop == details.shop and type(attribution.stocker) == 'string' then
+        local requested = math.min(math.floor(gross * (module.commission / 100)), net)
+        local employee = requested > 0 and exports.qbcore:getPlayerByCitizenId(attribution.stocker) or nil
+        if employee then
+            local debited = Pos.debit(business.job, requested, 'sold-stock commission')
+            if debited then
+                local paid = exports.qbcore:addMoney(employee.source, 'bank', requested, 'qbbusinesses-sale-commission')
+                if paid then
+                    commission = requested
+                    QB.notify.send(employee.source, {
+                        title = Config.notifyTitle,
+                        message = ('Stock commission: $%d'):format(commission),
+                        type = 'success',
+                    })
+                else
+                    Pos.credit(business.job, requested, 'failed commission rollback')
+                end
+            end
+        end
+    end
+    local toBusiness = net - commission
+
     Logs.record(business, {
-        category = 'sale', src = src, amount = net, webhook = module.webhook,
+        category = 'sale', src = src, amount = toBusiness, webhook = module.webhook,
         message = ('Sold %dx %s for $%d.'):format(details.amount or 1, details.item or '?', gross),
         fields = {
             { name = 'Tax', value = ('$%d'):format(tax), inline = true },
-            { name = 'To business', value = ('$%d'):format(net), inline = true },
+            { name = 'Commission', value = ('$%d'):format(commission), inline = true },
+            { name = 'To business', value = ('$%d'):format(toBusiness), inline = true },
         },
     })
 end)
@@ -430,8 +502,10 @@ local function tillContext(src, shopId, requireBoss)
     if not business then return nil, nil, 'Unknown business.' end
     if requireBoss then
         if not State.canManage(src, business) then return nil, nil, 'Only a boss can do that.' end
-    elseif not State.worksFor(src, business.job) and not record.module.public then
-        return nil, nil, 'You do not work here.'
+        if not State.nearModule(src, record) then return nil, nil, 'You are too far away.' end
+    else
+        local allowed, accessErr = State.employeeAt(src, business, record)
+        if not allowed then return nil, nil, accessErr end
     end
     return business, record.module
 end
@@ -497,12 +571,20 @@ QB.callback.register('qbbusinesses:server:panic', function(src, businessId, shop
     local business = State.get(businessId)
     if not business or not record or record.businessId ~= business.id then return false, 'Unknown till.' end
     if not record.module.panicButton then return false, 'This till has no panic button.' end
+    local allowed, accessErr = State.employeeAt(src, business, record, true)
+    if not allowed then return false, accessErr end
 
     if GetResourceState('qbdispatch') ~= 'started' then
         return false, 'No dispatch service is available.'
     end
 
-    local anchor = record.module.zoneType and record.module.coords or (record.module.coords and record.module.coords[1])
+    local playerCoords = GetEntityCoords(GetPlayerPed(src))
+    local anchor, bestDistance
+    for _, point in ipairs(record.coords or {}) do
+        local x, y, z = playerCoords.x - point.x, playerCoords.y - point.y, playerCoords.z - point.z
+        local distance = x * x + y * y + z * z
+        if not bestDistance or distance < bestDistance then anchor, bestDistance = point, distance end
+    end
     local coords = anchor and vector3(anchor.x, anchor.y, anchor.z) or GetEntityCoords(GetPlayerPed(src))
 
     local callId, recipients = exports.qbdispatch:createCall({

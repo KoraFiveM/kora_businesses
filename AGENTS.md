@@ -49,6 +49,11 @@ against limits and fails if the two ever diverge.
 who may open what; qbinventory owns the shelf and persists it. Do not add a
 stock table here — `test/smoke/contract.lua` fails if one appears.
 
+**Fixture access is server-bound.** Register stash, stock and shop inventories
+with the full coordinate list returned by `State.moduleBoundary`. Presence,
+automatic duty and panic callbacks share `State.employeeAt`, which resolves job,
+duty and live ped proximity on the server. Cached presence is never authority.
+
 ## Threading
 
 `QB.zones`' tick and qbtarget's target loop are **shared across every resource
@@ -112,7 +117,7 @@ running server. Update them in the same change as the code.
   only seeds a shop that was not restored, and the transfer path refuses shop
   inventories outright.
 * `qbbossmenu`: `removeBusinessMoney`, the mirror of `addBusinessMoney`, so a
-  commission can be paid out of the company account.
+  sold-stock commission can be paid from revenue only after a committed sale.
 * `qbbossmenu`: its `openStash` callback called `exports.qbinventory:openInventory`,
   which is a **client-realm** export — the server realm has `OpenInventory` and
   `stashOpen`. Fixed to `stashOpen`.

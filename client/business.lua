@@ -114,8 +114,10 @@ function Business:enter()
         if self.generation ~= generation then return clearScope(self.dynamic) end
 
         if Client.worksFor(self) then
-            QB.callback.trigger('qbbusinesses:server:enter', self.id)
             if self.controlDuty and Config.duty.enabled then self:setDuty(true) end
+            -- Presence means on-duty staff. Auto-duty therefore commits first;
+            -- the following callback is independently revalidated server-side.
+            QB.callback.trigger('qbbusinesses:server:enter', self.id)
         end
     end)
 end

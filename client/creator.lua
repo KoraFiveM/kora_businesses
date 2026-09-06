@@ -230,7 +230,7 @@ fieldsFor.POS = function(business)
         { id = 'id', label = 'Till id', type = 'text', required = true, default = business.id .. '_till' },
         { id = 'items', label = 'Stock list', type = 'select', options = lists,
           placeholder = 'Leave empty to allow any item' },
-        { id = 'commission', label = 'Restock commission (%)', type = 'number', default = 0, min = 0, max = 100 },
+        { id = 'commission', label = 'Sold-stock commission (%)', type = 'number', default = 0, min = 0, max = 100 },
         { id = 'tax', label = 'Sales tax (%)', type = 'number', default = 0, min = 0, max = 100 },
         { id = 'hideWhenStaffed', label = 'Customers cannot self-serve while staff are here', type = 'checkbox' },
         { id = 'panicButton', label = 'Panic button', type = 'checkbox' },

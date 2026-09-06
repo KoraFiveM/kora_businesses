@@ -79,6 +79,77 @@ function State.worksFor(src, job)
     return active ~= nil and active.name == job
 end
 
+---The authoritative points and radius from which a module can be used. Entity
+---anchors already are a list. Zone anchors use one bounding radius large enough
+---to cover the configured shape plus its target interaction distance, preserving
+---legitimate edge-of-zone interactions while still enforcing server proximity.
+---@param module table
+---@return table[] coords, number distance
+function State.moduleBoundary(module)
+    local interaction = tonumber(module and module.distance) or 2.0
+    if not module or not module.zoneType then return (module and module.coords) or {}, interaction end
+
+    local radius = interaction
+    if module.zoneType == 'sphere' then
+        radius = radius + (tonumber(module.radius) or 0)
+    elseif module.zoneType == 'box' then
+        local size = module.size or {}
+        local x, y, z = tonumber(size.x) or 0, tonumber(size.y) or 0, tonumber(size.z) or 0
+        radius = radius + math.sqrt(x * x + y * y + z * z) / 2
+    elseif module.zoneType == 'poly' then
+        local anchor = module.coords or {}
+        local furthest = 0
+        for _, point in ipairs(module.points or {}) do
+            local x = (tonumber(point.x) or 0) - (tonumber(anchor.x) or 0)
+            local y = (tonumber(point.y) or 0) - (tonumber(anchor.y) or 0)
+            local z = (tonumber(point.z) or 0) - (tonumber(anchor.z) or 0)
+            furthest = math.max(furthest, math.sqrt(x * x + y * y + z * z))
+        end
+        radius = radius + furthest + (tonumber(module.thickness) or 0)
+    end
+    return module.coords and { module.coords } or {}, radius
+end
+
+---@param src integer
+---@param module table
+---@return boolean
+function State.nearModule(src, module)
+    if not exports.qbcore:getPlayerData(src) or GetPlayerPed(src) == 0 then return false end
+    local coords, distance = State.moduleBoundary(module)
+    for _, point in ipairs(coords) do
+        local ok, nearby = pcall(QB.distance.player, src, point, tonumber(point.distance) or distance)
+        if ok and nearby then return true end
+    end
+    return false
+end
+
+---@param src integer
+---@param business table
+---@return boolean
+function State.nearBusiness(src, business)
+    for _, module in ipairs((business and business.modules) or {}) do
+        if module.moduleType == 'Zone' and State.nearModule(src, module) then return true end
+    end
+    return false
+end
+
+---Shared employee boundary for presence, automatic duty, and fixture actions.
+---The job and duty values always come from qbcore, and the position always comes
+---from the server ped; the client supplies only which known business it means.
+---@param src integer
+---@param business table
+---@param module? table Omit to require proximity to a business perimeter.
+---@param requireDuty? boolean
+---@return boolean ok, string|nil err
+function State.employeeAt(src, business, module, requireDuty)
+    local job = State.playerJob(src)
+    if not job or not business or job.name ~= business.job then return false, 'You do not work here.' end
+    if requireDuty and job.onduty ~= true then return false, 'You are not on duty.' end
+    local nearby = module and State.nearModule(src, module) or State.nearBusiness(src, business)
+    if not nearby then return false, 'You are too far away.' end
+    return true
+end
+
 ---True when `src` holds a boss grade for this job.
 ---@param src integer
 ---@param job string
@@ -159,6 +230,7 @@ function State.remove(id)
     if not business then return false, 'Unknown business.' end
     local _, err = QB.sql.execute('DELETE FROM `qbbusinesses` WHERE `id` = ?', { id })
     if err then return false, 'Could not delete the business.' end
+    QbBusinesses.register.removeBusiness(business)
     State.businesses[id] = nil
     State.broadcast()
     return true

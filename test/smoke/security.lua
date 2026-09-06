@@ -38,6 +38,19 @@ end
 H.ok(pos:find('requireBoss', 1, true) or pos:find('State.canManage', 1, true),
     'repricing a till is gated on managing the business')
 H.ok(pos:find("tillContext(src, shopId, true)", 1, true), 'setTillPrice requires the boss context')
+H.ok(state:find('function State.employeeAt(src, business, module, requireDuty)', 1, true),
+    'staff actions share one authoritative employee/location boundary')
+H.ok(staff:find('State.employeeAt(src, business, nil, true)', 1, true),
+    'presence requires the real job, duty and business proximity')
+H.ok(staff:find("module.moduleType == 'Zone' and module.controlDuty ~= false", 1, true),
+    'automatic duty requires a nearby perimeter that opted into duty control')
+H.ok(pos:find('State.employeeAt(src, business, record, true)', 1, true),
+    'panic requires on-duty staff at the actual till')
+H.ok(pos:find('State.employeeAt(src, business, record)', 1, true),
+    'stock intake revalidates the closing employee at the till')
+H.ok(staff:find("AddEventHandler('QBCore:Server:OnPlayerUnload', function(src)", 1, true),
+    'character unload prunes the explicit source rather than ambient event source')
+H.ok(staff:find('if prune() then publish() end', 1, true), 'stale presence is periodically revalidated')
 
 -- --- rate limiting ---------------------------------------------------------
 --
@@ -83,6 +96,12 @@ H.ok(payment:find('approved ~= true', 1, true),
 H.ok(pos:find("action ~= 'purchase'", 1, true), 'sales are credited from the committed purchase audit')
 H.nope(pos:find("RegisterHook('buyItem'", 1, true),
     'sales are NOT credited from a pre-commit buyItem hook')
+H.nope(pos:find('qbbusinesses-stock-commission', 1, true),
+    'stocking cannot pay commission from an employee-supplied retail price')
+H.ok(pos:find("Pos.debit(business.job, requested, 'sold-stock commission')", 1, true),
+    'commission is released from business revenue only in the committed purchase handler')
+H.ok(pos:find('serverData = existing and existing.serverData', 1, true),
+    'stock batches retain server-only employee attribution until sale')
 H.ok(crafting:find('for _, undo in ipairs(removed) do', 1, true),
     'a partial ingredient removal is rolled back')
 
@@ -96,6 +115,8 @@ H.ok(state:find('business.rev = checksum(', 1, true),
 local persist = state:match('function State%.persist.-\nend')
 H.ok(persist and persist:find('writeErr then return nil', 1, true),
     'a failed database write does not update the live registry')
+H.ok(register:find('State.moduleBoundary(module)', 1, true), 'business stashes register their server coordinate boundary')
+H.ok(pos:find('coords = record.coords', 1, true), 'POS shops register every fixture coordinate')
 
 -- --- seed jobs -------------------------------------------------------------
 --

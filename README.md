@@ -63,7 +63,7 @@ client. The till exists for everyone about two frames later.
 | **Blip** | A map marker. |
 | **StaticEntity** | Decorative props, peds or vehicles with no interaction. |
 | **BossMenu** | Opens `qbbossmenu` for a boss of this job. |
-| **POS** | A customer-facing till, an employee-facing intake stash, prices, tax, restock commission and an optional panic button. |
+| **POS** | A customer-facing till, an employee-facing intake stash, prices, tax, sold-stock commission and an optional panic button. |
 | **Stash** | Job-locked storage. |
 | **Crafting** | A bench offering recipes from the shared recipe library, with live ingredient counts and optional skill gates. |
 | **UseableItem** | Binds an item to a weighted reward roll or to a recipe — mystery boxes, ingredient packs. |
@@ -91,13 +91,16 @@ employee                          customer
 * A price comes from the till's `Config.shopItems` list if that list fixes one,
   otherwise from what the till was last told, otherwise the employee is asked.
   What they answer is remembered for next time.
-* A **restock commission** (`%` of retail value) is paid to the employee out of
-  the business account. If the account cannot cover it, they are told so rather
-  than being paid from nowhere.
+* A **sold-stock commission** (`%` of committed sale revenue) is attributed to
+  the employee who stocked that batch. Merely stocking or naming a price pays
+  nothing. When a customer actually buys it, the business receives the sale and
+  the online stocker is paid from that revenue.
 * A sale credits the business account with the price minus **tax**, and is
   credited from qbinventory's committed purchase record — never from a
   pre-commit hook, which would pay out for sales that then fail.
 * `hideWhenStaffed` stops customers self-serving while an employee is inside.
+  Staff presence means an on-duty employee whose live server position remains
+  inside the configured business perimeter.
 
 ### The card machine
 

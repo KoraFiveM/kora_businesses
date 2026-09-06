@@ -69,8 +69,12 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
     CreateThread(function()
         for _, business in pairs(live) do
             if business.inside then
-                QB.callback.trigger(Client.worksFor(business) and 'qbbusinesses:server:enter'
-                    or 'qbbusinesses:server:leave', business.id)
+                if Client.worksFor(business) then
+                    if business.controlDuty and Config.duty.enabled then business:setDuty(true) end
+                    QB.callback.trigger('qbbusinesses:server:enter', business.id)
+                else
+                    QB.callback.trigger('qbbusinesses:server:leave', business.id)
+                end
             end
         end
     end)

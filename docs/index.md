@@ -59,7 +59,7 @@ Either anchor.
 |---|---|
 | `id` | Shop id. Two modules may share one to make a row of registers. |
 | `items` | Names of `Config.shopItems` lists. Restricts what may be stocked and fixes prices. Omit to allow any item at employee-set prices. |
-| `commission` | 0–100. Percent of retail value paid to whoever restocks, out of the business account. |
+| `commission` | 0–100. Percent of committed sale revenue paid to the online employee who stocked that batch. Stocking alone never pays. |
 | `tax` | 0–100. Percent of each sale withheld from the business account. |
 | `hideWhenStaffed` | Customers cannot self-serve while an employee is inside the business. |
 | `panicButton` | Adds a silent alarm option, routed through `qbdispatch`. |
@@ -72,6 +72,9 @@ mistyped tax as 0 would leave a business quietly collecting nothing.
 
 ### `Stash`
 Either anchor. `id`, `slots`, `weight`. Job-locked unless `public`.
+Stash and till inventories are bound server-side to every coordinate carried by
+their module (including rows of entity fixtures), and their active lease is
+closed if the player moves away.
 
 ### `Crafting`
 Either anchor. `recipes` — an array of ids from `Config.recipes`. The menu shows
