@@ -261,33 +261,13 @@ fieldsFor.Crafting = function()
     local values = form({
         { id = 'label', label = 'Label', type = 'text', required = true, default = 'Crafting' },
         { id = 'public', label = 'Anyone may use it', type = 'checkbox' },
+        {
+            id = 'recipes', label = 'Recipes', type = 'multiselect', required = true,
+            description = 'Select every recipe this bench should offer.', options = recipes,
+        },
     }, 'Crafting bench')
     if not values then return nil end
-
-    -- A multi-select field does not exist, so the bench is filled one recipe at
-    -- a time. Cancelling the picker finishes the list rather than aborting.
-    local chosen, taken = {}, {}
-    while true do
-        local options = {}
-        for _, recipe in ipairs(recipes) do
-            if not taken[recipe.value] then
-                options[#options + 1] = { id = recipe.value, label = recipe.label }
-            end
-        end
-        if #options == 0 then break end
-        options[#options + 1] = { id = '__done', label = ('Done (%d selected)'):format(#chosen), icon = 'Check' }
-
-        local choice = pick(options, 'Add a recipe')
-        if not choice or choice == '__done' then break end
-        taken[choice] = true
-        chosen[#chosen + 1] = choice
-    end
-
-    if #chosen == 0 then
-        Client.notify('A bench needs at least one recipe.', 'error')
-        return nil
-    end
-    return { label = values.label, public = values.public, recipes = chosen }
+    return { label = values.label, public = values.public, recipes = values.recipes }
 end
 
 fieldsFor.UseableItem = function()
@@ -335,6 +315,8 @@ end
 ---@param business table
 ---@param index? integer nil to append a new module
 ---@param moduleType? string
+---@return boolean? saved
+---@return integer? position
 local function editModule(business, index, moduleType)
     if not moduleType then
         local options = {}
@@ -361,181 +343,477 @@ local function editModule(business, index, moduleType)
         if blip then payload.blip = blip end
     end
 
-    local ok, err = QB.callback.trigger('qbbusinesses:server:saveModule', business.id, index, payload)
-    Client.notify(ok and 'Module saved. It is live now.' or (err or 'That module was rejected.'), ok and 'success' or 'error')
-end
-
----@param business table
-local function manageModules(business)
-    while true do
-        local definition = Client.definitions[business.id]
-        if not definition then return end
-
-        local options = { { id = '__add', label = 'Add a module', icon = 'Plus' } }
-        for index, module in ipairs(definition.modules) do
-            options[#options + 1] = {
-                id = tostring(index),
-                label = ('%d. %s'):format(index, module.label),
-                description = module.moduleType,
-            }
-        end
-
-        local choice = pick(options, ('%s modules'):format(definition.label))
-        if not choice then return end
-
-        if choice == '__add' then
-            editModule(definition)
-        else
-            local index = tonumber(choice)
-            local module = definition.modules[index]
-            local action = pick({
-                { id = 'edit', label = 'Rebuild this module', description = 'Re-enter every field and reposition it' },
-                { id = 'remove', label = 'Delete this module', icon = 'Trash2' },
-            }, module.label)
-
-            if action == 'edit' then
-                editModule(definition, index, module.moduleType)
-            elseif action == 'remove' then
-                local confirm = QB.nui.openAlert({
-                    title = 'Delete module', destructive = true,
-                    message = ('Delete "%s" from %s?'):format(module.label, definition.label),
-                    confirmLabel = 'Delete',
-                })
-                if confirm and confirm.confirmed then
-                    local ok, err = QB.callback.trigger('qbbusinesses:server:removeModule', definition.id, index)
-                    Client.notify(ok and 'Module deleted.' or (err or 'Could not delete that.'), ok and 'success' or 'error')
-                end
-            end
-        end
-    end
+    local ok, result = QB.callback.trigger('qbbusinesses:server:saveModule', business.id, index, payload)
+    Client.notify(ok and 'Module saved. It is live now.' or (result or 'That module was rejected.'), ok and 'success' or 'error')
+    return ok == true, ok and tonumber(result) or nil
 end
 
 -- ---------------------------------------------------------------------------
 -- Business management
 -- ---------------------------------------------------------------------------
 
----@param businessId string
-local function showLogs(businessId)
-    local rows, err = QB.callback.trigger('qbbusinesses:server:logs', businessId, 50)
-    if not rows then return Client.notify(err or 'You cannot read those logs.', 'error') end
-    if #rows == 0 then return Client.notify('Nothing has happened here yet.', 'info') end
+local APP_ID = 'qbbusinesses:management'
+local openManagement
+local currentState
 
-    local items = {}
-    for _, row in ipairs(rows) do
-        items[#items + 1] = {
-            id = tostring(#items + 1),
-            label = row.message,
-            description = ('%s -- %s'):format(row.category, tostring(row.created_at)),
-        }
-    end
-    QB.nui.openMenu(items, 'Recent activity')
+local logTones = {
+    admin = 'primary', sale = 'success', stock = 'success', payment = 'warning',
+    craft = 'primary', panic = 'destructive',
+}
+
+---@param amount any
+---@return string
+local function money(amount)
+    return ('$%d'):format(math.floor(tonumber(amount) or 0))
 end
 
 ---@param businessId string
-local function manage(businessId)
-    while true do
+---@param previousRev? string
+---@return table|nil business
+local function awaitBusiness(businessId, previousRev)
+    for _ = 1, 40 do
         local business = Client.definitions[businessId]
-        if not business then return end
+        if business and (not previousRev or business.rev ~= previousRev) then return business end
+        Wait(50)
+    end
+    return Client.definitions[businessId]
+end
 
-        local options = {
-            { id = 'logs', label = 'Recent activity', icon = 'ScrollText' },
-            { id = 'balance', label = 'Business balance', icon = 'Wallet' },
+---@param state table
+local function loadBusinessSummary(state)
+    state.balance, state.balanceError, state.logs, state.logsError = nil, nil, {}, nil
+    if not state.businessId or not Client.definitions[state.businessId] then return end
+
+    local balance, balanceError = QB.callback.trigger('qbbusinesses:server:balance', state.businessId)
+    if balance ~= nil then state.balance = balance else state.balanceError = balanceError end
+
+    local logs, logsError = QB.callback.trigger('qbbusinesses:server:logs', state.businessId, 50)
+    if type(logs) == 'table' then state.logs = logs else state.logsError = logsError end
+end
+
+---@return table[] businesses
+local function manageableBusinesses()
+    local businesses = {}
+    for _, business in pairs(Client.definitions) do
+        if isAdmin or Client.isBoss(business) then businesses[#businesses + 1] = business end
+    end
+    table.sort(businesses, function(a, b) return a.label < b.label end)
+    return businesses
+end
+
+---@param module table
+---@return string
+local function anchorLabel(module)
+    local coords = module.zoneType and module.coords or (module.coords and module.coords[1])
+    if not coords then return 'No world anchor' end
+    return ('%.1f, %.1f, %.1f'):format(coords.x or 0.0, coords.y or 0.0, coords.z or 0.0)
+end
+
+---@param state table
+---@return table definition
+local function appDefinition(state)
+    local businessCards = {}
+    for _, business in ipairs(manageableBusinesses()) do
+        businessCards[#businessCards + 1] = {
+            id = business.id,
+            label = business.label,
+            description = business.job,
+            icon = 'building-2',
+            badge = #business.modules,
+            tone = business.id == state.businessId and 'primary' or 'neutral',
+            action = 'businesses:select',
+            metadata = {
+                { label = 'Job', value = business.job },
+                { label = 'Modules', value = #business.modules },
+                { label = 'Staff present', value = Client.staff[business.id] or 0,
+                    tone = (Client.staff[business.id] or 0) > 0 and 'success' or 'neutral' },
+            },
+        }
+    end
+
+    local directoryActions = {}
+    if isAdmin and #state.jobs > 0 then
+        directoryActions[#directoryActions + 1] = {
+            id = 'businesses:create', label = 'Create business', icon = 'plus',
+            variant = 'primary', closeBeforeAction = true,
+            fields = {
+                { id = 'label', label = 'Business name', type = 'text', required = true, maxLength = 128 },
+                { id = 'job', label = 'Job', type = 'select', required = true, options = state.jobs },
+            },
+            confirm = 'Create this business, then place its first module?',
+        }
+    end
+
+    local navigation = {
+        {
+            id = 'businesses', label = 'Businesses', icon = 'building-2', badge = #businessCards,
+            content = {
+                title = 'Business directory',
+                description = isAdmin and 'Open a business to manage its modules and activity.'
+                    or 'Businesses where your current grade has management access.',
+                actions = directoryActions,
+                blocks = {
+                    {
+                        type = 'list', id = 'business-directory', layout = 'cards', searchable = true,
+                        pageSize = 8, searchPlaceholder = 'Search businesses or jobs…', items = businessCards,
+                        empty = isAdmin and 'No businesses exist yet.' or 'You do not manage any business.',
+                    },
+                },
+            },
+        },
+    }
+
+    local business = state.businessId and Client.definitions[state.businessId]
+    if business and (isAdmin or Client.isBoss(business)) then
+        local overviewActions = {
+            { id = 'businesses:refresh', label = 'Refresh', icon = 'refresh-cw', variant = 'outline' },
+        }
+        if isAdmin and #state.jobs > 0 then
+            overviewActions[#overviewActions + 1] = {
+                id = 'businesses:edit', label = 'Rename or reassign', icon = 'pencil',
+                fields = {
+                    { id = 'label', label = 'Name', type = 'text', required = true,
+                        default = business.label, maxLength = 128 },
+                    { id = 'job', label = 'Job', type = 'select', required = true,
+                        options = state.jobs, default = business.job },
+                },
+            }
+            overviewActions[#overviewActions + 1] = {
+                id = 'businesses:delete', label = 'Delete business', icon = 'trash-2',
+                variant = 'destructive',
+                confirm = ('Delete %s and every module it owns? Stashes and till stock are left untouched.'):format(business.label),
+            }
+        end
+
+        local moduleCards = {}
+        for index, module in ipairs(business.modules) do
+            moduleCards[#moduleCards + 1] = {
+                id = tostring(index),
+                label = module.label,
+                description = module.moduleType,
+                icon = module.moduleType == 'Zone' and 'scan' or 'blocks',
+                badge = index,
+                tone = index == state.moduleIndex and 'primary' or 'neutral',
+                action = 'businesses:select-module',
+                metadata = {
+                    { label = 'Anchor', value = anchorLabel(module) },
+                    { label = 'Access', value = module.public and 'Public' or 'Job restricted' },
+                    { label = 'Interaction', value = S.moduleType[module.moduleType].interaction },
+                },
+                actions = {
+                    {
+                        id = 'businesses:edit-module', label = 'Rebuild', icon = 'pencil-ruler',
+                        closeBeforeAction = true,
+                    },
+                    {
+                        id = 'businesses:remove-module', label = 'Delete', icon = 'trash-2',
+                        variant = 'destructive', confirm = ('Delete "%s"?'):format(module.label),
+                    },
+                },
+            }
+        end
+
+        local moduleBlocks = {
+            {
+                type = 'list', id = 'business-modules', layout = 'cards', searchable = true,
+                pageSize = 8, searchPlaceholder = 'Search modules…', items = moduleCards,
+                empty = 'No modules are configured. Add a perimeter first.',
+            },
+        }
+        local selectedModule = business.modules[state.moduleIndex or 0]
+        if selectedModule then
+            moduleBlocks[#moduleBlocks + 1] = {
+                type = 'details', title = ('Module %d · %s'):format(state.moduleIndex, selectedModule.label),
+                columns = 2,
+                items = {
+                    { label = 'Type', value = selectedModule.moduleType, tone = 'primary' },
+                    { label = 'Interaction', value = S.moduleType[selectedModule.moduleType].interaction },
+                    { label = 'World anchor', value = anchorLabel(selectedModule) },
+                    { label = 'Distance', value = selectedModule.distance or 'Default' },
+                    { label = 'Access', value = selectedModule.public and 'Public' or business.job },
+                    { label = 'Map blip', value = selectedModule.blip and 'Enabled' or 'None' },
+                },
+            }
+        end
+
+        local activity = {}
+        for index, row in ipairs(state.logs or {}) do
+            activity[#activity + 1] = {
+                id = tostring(row.id or index),
+                title = row.message or 'Business activity',
+                timestamp = tostring(row.created_at or ''),
+                tone = logTones[row.category] or 'neutral',
+                icon = row.category == 'admin' and 'settings' or 'history',
+                metadata = {
+                    { label = 'Category', value = row.category or 'activity' },
+                    { label = 'Amount', value = row.amount and money(row.amount) or '—' },
+                },
+            }
+        end
+
+        local tabs = {
+            {
+                id = 'overview', label = 'Overview', content = {
+                    title = business.label, description = 'Live business status and ownership.',
+                    actions = overviewActions,
+                    blocks = {
+                        { type = 'stats', items = {
+                            { label = 'Balance', value = state.balance ~= nil and money(state.balance) or 'Unavailable',
+                                description = state.balanceError, icon = 'wallet', tone = state.balance ~= nil and 'success' or 'warning' },
+                            { label = 'Modules', value = #business.modules, icon = 'blocks', tone = 'primary' },
+                            { label = 'Staff present', value = Client.staff[business.id] or 0, icon = 'users' },
+                        } },
+                        { type = 'details', title = 'Business details', columns = 2, items = {
+                            { label = 'Business id', value = business.id },
+                            { label = 'Job', value = business.job },
+                            { label = 'Revision', value = business.rev or 'Pending' },
+                            { label = 'Management', value = isAdmin and 'Administrator' or 'Job boss' },
+                        } },
+                    },
+                },
+            },
+            {
+                id = 'activity', label = 'Activity', badge = #activity, content = {
+                    title = 'Recent activity', description = state.logsError,
+                    blocks = { { type = 'timeline', title = 'Audit trail', items = activity,
+                        empty = state.logsError or 'Nothing has happened here yet.' } },
+                },
+            },
         }
         if isAdmin then
-            options[#options + 1] = { id = 'modules', label = 'Modules', icon = 'Blocks', description = ('%d configured'):format(#business.modules) }
-            options[#options + 1] = { id = 'details', label = 'Rename or reassign', icon = 'Pencil' }
-            options[#options + 1] = { id = 'delete', label = 'Delete this business', icon = 'Trash2' }
-        end
-
-        local choice = pick(options, business.label)
-        if not choice then return end
-
-        if choice == 'logs' then
-            showLogs(businessId)
-        elseif choice == 'balance' then
-            local balance, err = QB.callback.trigger('qbbusinesses:server:balance', businessId)
-            Client.notify(balance and ('Business balance: $%d'):format(balance) or (err or 'No balance available.'),
-                balance and 'info' or 'error')
-        elseif choice == 'modules' then
-            manageModules(business)
-        elseif choice == 'details' then
-            local jobs = QB.callback.trigger('qbbusinesses:server:jobs')
-            local options2 = {}
-            for _, job in ipairs(jobs or {}) do options2[#options2 + 1] = { value = job.value, label = job.label } end
-            local values = form({
-                { id = 'label', label = 'Name', type = 'text', required = true, default = business.label },
-                { id = 'job', label = 'Job', type = 'select', required = true, options = options2, default = business.job },
-            }, 'Business details')
-            if values then
-                local ok, err = QB.callback.trigger('qbbusinesses:server:editBusiness', businessId, values)
-                Client.notify(ok and 'Business updated.' or (err or 'That change was rejected.'), ok and 'success' or 'error')
-            end
-        elseif choice == 'delete' then
-            local confirm = QB.nui.openAlert({
-                title = 'Delete business', destructive = true,
-                message = ('Delete %s and every module it owns? Stashes and till stock are left untouched.'):format(business.label),
-                confirmLabel = 'Delete',
+            table.insert(tabs, 2, {
+                id = 'modules', label = 'Modules', badge = #moduleCards, content = {
+                    title = 'Module overview',
+                    description = 'World editors close this console and reopen it on the same business and module.',
+                    actions = {
+                        {
+                            id = 'businesses:add-module', label = 'Add module', icon = 'plus',
+                            variant = 'primary', closeBeforeAction = true,
+                        },
+                    },
+                    blocks = moduleBlocks,
+                },
             })
-            if confirm and confirm.confirmed then
-                local ok, err = QB.callback.trigger('qbbusinesses:server:deleteBusiness', businessId)
-                Client.notify(ok and 'Business deleted.' or (err or 'Could not delete it.'), ok and 'success' or 'error')
-                if ok then return end
-            end
         end
+
+        navigation[#navigation + 1] = {
+            id = 'management', label = business.label, description = business.job,
+            icon = 'layout-dashboard', defaultTab = state.moduleIndex and 'modules' or 'overview', tabs = tabs,
+        }
+    end
+
+    return {
+        id = APP_ID,
+        title = 'Business management',
+        description = business and business.label or 'Live business directory',
+        icon = 'building-2',
+        width = 1200,
+        height = 800,
+        navigation = navigation,
+        footer = 'Data, permissions, and mutations are validated by the qbbusinesses server.',
+    }
+end
+
+---@param state table
+---@return table update
+local function appUpdate(state)
+    local definition = appDefinition(state)
+    return {
+        title = definition.title,
+        description = definition.description,
+        navigation = definition.navigation,
+        footer = definition.footer,
+    }
+end
+
+---@param state table
+---@param businessId string
+---@param index? integer
+---@param moduleType? string
+local function launchModuleEditor(state, businessId, index, moduleType)
+    CreateThread(function()
+        local business = Client.definitions[businessId]
+        if not business then
+            Client.notify('That business no longer exists.', 'error')
+            state.businessId, state.moduleIndex = nil, nil
+            return openManagement(state, 'businesses')
+        end
+
+        local previousRev = business.rev
+        local saved, position = editModule(business, index, moduleType)
+        if saved then
+            awaitBusiness(businessId, previousRev)
+            state.moduleIndex = position or index
+        else
+            state.moduleIndex = index
+        end
+        state.businessId = businessId
+        loadBusinessSummary(state)
+        openManagement(state, 'management', 'modules')
+    end)
+end
+
+---@param state table
+---@param values table
+local function createBusinessAndResume(state, values)
+    CreateThread(function()
+        local businessId, err = QB.callback.trigger('qbbusinesses:server:createBusiness', values)
+        if not businessId then
+            Client.notify(err or 'Could not create that business.', 'error')
+            return openManagement(state, 'businesses')
+        end
+
+        local business = awaitBusiness(businessId)
+        if not business then
+            Client.notify('Business saved, but its live definition has not arrived yet.', 'warning')
+            return openManagement(state, 'businesses')
+        end
+
+        state.businessId, state.moduleIndex = businessId, nil
+        Client.notify('Business created. Add its perimeter next.', 'success')
+        local previousRev = business.rev
+        local saved, position = editModule(business)
+        if saved then
+            awaitBusiness(businessId, previousRev)
+            state.moduleIndex = position
+        end
+        loadBusinessSummary(state)
+        openManagement(state, 'management', 'modules')
+    end)
+end
+
+---@param state table
+---@return function
+local function actionHandler(state)
+    return function(actionId, context)
+        local itemId = context and context.itemId
+        local values = type(context and context.value) == 'table' and context.value or {}
+
+        if actionId == 'businesses:select' then
+            local business = itemId and Client.definitions[itemId]
+            if not business or not (isAdmin or Client.isBoss(business)) then
+                return { notice = { tone = 'destructive', message = 'That business is no longer available.' } }
+            end
+            state.businessId, state.moduleIndex = business.id, nil
+            loadBusinessSummary(state)
+            return { update = appUpdate(state), navigate = { viewId = 'management', tabId = 'overview' } }
+        end
+
+        if actionId == 'businesses:create' then
+            createBusinessAndResume(state, { label = values.label, job = values.job })
+            return
+        end
+
+        local business = state.businessId and Client.definitions[state.businessId]
+        if not business or not (isAdmin or Client.isBoss(business)) then
+            return { notice = { tone = 'destructive', message = 'That business is no longer available.' } }
+        end
+
+        if actionId == 'businesses:refresh' then
+            loadBusinessSummary(state)
+            return { update = appUpdate(state), notice = { tone = 'success', message = 'Business data refreshed.' } }
+        elseif actionId == 'businesses:select-module' then
+            local index = math.floor(tonumber(itemId) or 0)
+            if not business.modules[index] then
+                return { notice = { tone = 'destructive', message = 'That module no longer exists.' } }
+            end
+            state.moduleIndex = index
+            return { update = appUpdate(state), navigate = { viewId = 'management', tabId = 'modules', replace = true } }
+        elseif actionId == 'businesses:add-module' then
+            launchModuleEditor(state, business.id)
+            return
+        elseif actionId == 'businesses:edit-module' then
+            local index = math.floor(tonumber(itemId) or 0)
+            local module = business.modules[index]
+            if not module then error('That module no longer exists.') end
+            launchModuleEditor(state, business.id, index, module.moduleType)
+            return
+        elseif actionId == 'businesses:remove-module' then
+            local index = math.floor(tonumber(itemId) or 0)
+            if not business.modules[index] then
+                return { notice = { tone = 'destructive', message = 'That module no longer exists.' } }
+            end
+            local previousRev = business.rev
+            local ok, err = QB.callback.trigger('qbbusinesses:server:removeModule', business.id, index)
+            if not ok then return { notice = { tone = 'destructive', message = err or 'Could not delete that module.' } } end
+            awaitBusiness(business.id, previousRev)
+            state.moduleIndex = nil
+            loadBusinessSummary(state)
+            return { update = appUpdate(state), notice = { tone = 'success', message = 'Module deleted.' } }
+        elseif actionId == 'businesses:edit' then
+            local previousRev = business.rev
+            local ok, err = QB.callback.trigger('qbbusinesses:server:editBusiness', business.id, {
+                label = values.label, job = values.job,
+            })
+            if not ok then return { notice = { tone = 'destructive', message = err or 'That change was rejected.' } } end
+            awaitBusiness(business.id, previousRev)
+            loadBusinessSummary(state)
+            return { update = appUpdate(state), notice = { tone = 'success', message = 'Business updated.' } }
+        elseif actionId == 'businesses:delete' then
+            local ok, err = QB.callback.trigger('qbbusinesses:server:deleteBusiness', business.id)
+            if not ok then return { notice = { tone = 'destructive', message = err or 'Could not delete that business.' } } end
+            state.businessId, state.moduleIndex, state.balance, state.logs = nil, nil, nil, {}
+            return {
+                update = appUpdate(state), navigate = { viewId = 'businesses', replace = true },
+                notice = { tone = 'success', message = 'Business deleted.' },
+            }
+        end
+
+        error('That business action is no longer available.')
     end
 end
 
-local function createBusiness()
-    local jobs = QB.callback.trigger('qbbusinesses:server:jobs')
-    if not jobs or #jobs == 0 then return Client.notify('No jobs are available.', 'error') end
+---@param state table
+---@param viewId? string
+---@param tabId? string
+openManagement = function(state, viewId, tabId)
+    local definition = appDefinition(state)
+    definition.onAction = actionHandler(state)
+    QB.nui.registerApp(definition)
+    currentState = state
+    QB.nui.openApp(APP_ID, { viewId = viewId, tabId = tabId })
+    if currentState == state then currentState = nil end
+end
 
-    local options = {}
-    for _, job in ipairs(jobs) do options[#options + 1] = { value = job.value, label = job.label } end
-
-    local values = form({
-        { id = 'label', label = 'Business name', type = 'text', required = true },
-        { id = 'job', label = 'Job', type = 'select', required = true, options = options },
-    }, 'New business', 'The id is derived from the name and cannot be changed later.')
-    if not values then return end
-
-    local id, err = QB.callback.trigger('qbbusinesses:server:createBusiness', values)
-    if not id then return Client.notify(err or 'Could not create that business.', 'error') end
-
-    Client.notify('Business created. Add its perimeter next.', 'success')
-    -- Straight into the module builder: a business with no modules does nothing
-    -- at all, and the very next thing anyone wants is its zone.
-    local business = Client.definitions[id]
-    if business then manageModules(business) end
+---Refreshes an open console after the replicated business or staff snapshots
+---change. It deliberately does not call the server from a net-event handler;
+---the explicit Refresh action owns balance/log fetching.
+---@return boolean updated
+function Creator.refresh()
+    if not currentState or not QB.nui.isAppOpen(APP_ID) then return false end
+    local business = currentState.businessId and Client.definitions[currentState.businessId]
+    if currentState.businessId and (not business or not (isAdmin or Client.isBoss(business))) then
+        currentState.businessId, currentState.moduleIndex = nil, nil
+    elseif business and currentState.moduleIndex and not business.modules[currentState.moduleIndex] then
+        currentState.moduleIndex = nil
+    end
+    return QB.nui.updateApp(APP_ID, appUpdate(currentState))
 end
 
 function Creator.open()
-    local options = {}
-    if isAdmin then
-        options[#options + 1] = { id = '__new', label = 'Create a business', icon = 'Plus' }
+    if QB.nui.isAppOpen(APP_ID) then return end
+
+    local businesses = manageableBusinesses()
+    if not isAdmin and #businesses == 0 then
+        return Client.notify('You do not manage any business.', 'error')
     end
 
-    local sorted = {}
-    for _, business in pairs(Client.definitions) do sorted[#sorted + 1] = business end
-    table.sort(sorted, function(a, b) return a.label < b.label end)
-
-    for _, business in ipairs(sorted) do
-        if isAdmin or Client.isBoss(business) then
-            options[#options + 1] = {
-                id = business.id, label = business.label,
-                description = ('%s -- %d module(s)'):format(business.job, #business.modules),
-            }
+    CreateThread(function()
+        local jobs = {}
+        if isAdmin then
+            local result, err = QB.callback.trigger('qbbusinesses:server:jobs')
+            if type(result) == 'table' then jobs = result
+            elseif err then Client.notify(err, 'error') end
         end
-    end
-
-    if #options == 0 then return Client.notify('You do not manage any business.', 'error') end
-
-    local choice = pick(options, 'Businesses')
-    if not choice then return end
-    if choice == '__new' then return createBusiness() end
-    manage(choice)
+        local state = { jobs = jobs, logs = {} }
+        openManagement(state, 'businesses')
+    end)
 end
 
 ---@param value boolean
-function Creator.setAdmin(value) isAdmin = value == true end
+function Creator.setAdmin(value)
+    isAdmin = value == true
+    Creator.refresh()
+end
 
 RegisterCommand(Config.command, function() Creator.open() end, false)

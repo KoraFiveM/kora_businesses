@@ -36,10 +36,15 @@ never come back.
 `/business` — admins see everything, a boss sees their own business.
 
 ```
-Businesses
-  + Create a business          -> name + job, then straight into modules
-  Burger Shot                  -> Modules / Activity / Balance / Rename / Delete
+Business management
+  Businesses                   -> searchable business cards
+  Burger Shot                  -> Overview / Modules / Activity
 ```
+
+The console uses qblib's AppShell. Actions and forms stay in the selected
+business workspace; opening a placement or zone editor closes the shell to
+release game input, then reopens the same business and selected module when the
+editor finishes.
 
 Adding a module asks three things: **what** it is, **where** it is, and whether
 it wants a map blip. "Where" is never typed in:
@@ -52,6 +57,10 @@ it wants a map blip. "Where" is never typed in:
 
 Saving pushes the row to MySQL and the new definition to every connected
 client. The till exists for everyone about two frames later.
+
+Crafting benches select all offered recipes in one multiselect field. The
+server still resolves and validates those recipe ids against the shared recipe
+library before saving the module.
 
 ---
 

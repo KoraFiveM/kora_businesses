@@ -45,6 +45,8 @@ local function apply(definitions)
             live[id] = Business.new(definition)
         end
     end
+
+    Creator.refresh()
 end
 
 RegisterNetEvent('qbbusinesses:client:sync', function(definitions)
@@ -53,6 +55,7 @@ end)
 
 RegisterNetEvent('qbbusinesses:client:staff', function(counts)
     Client.staff = type(counts) == 'table' and counts or {}
+    Creator.refresh()
 end)
 
 ---A job change does not move any zone, but it does change what the player may
@@ -77,6 +80,7 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
                 end
             end
         end
+        Creator.refresh()
     end)
 end)
 

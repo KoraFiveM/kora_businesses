@@ -76,4 +76,35 @@ H.ok(creator:find('QB.zones.startCreator', 1, true), 'zones are placed in-world'
 H.ok(creator:find('QB.placement.start', 1, true), 'props are placed in-world')
 H.ok(creator:find('QB.raycast.fromCamera', 1, true), 'an existing object is picked by looking at it')
 
+-- --- AppShell management and editor resume ---------------------------------
+
+H.ok(creator:find("local APP_ID = 'qbbusinesses:management'", 1, true),
+    'the management console has one namespaced AppShell id')
+H.ok(creator:find('QB.nui.registerApp(definition)', 1, true),
+    'business management is registered with AppShell')
+H.ok(creator:find("openManagement(state, 'management', 'modules')", 1, true),
+    'the console resumes on the selected business module tab after an editor')
+H.ok(creator:find("id = 'businesses:add-module'", 1, true)
+    and creator:find("id = 'businesses:edit-module'", 1, true),
+    'module creation and rebuilding are AppShell actions')
+H.ok(creator:find('closeBeforeAction = true', 1, true),
+    'world-editor actions release AppShell focus before running')
+H.ok(creator:find('state.moduleIndex = position or index', 1, true),
+    'editor resume preserves the selected module')
+H.ok(creator:find('function Creator.refresh()', 1, true)
+    and main:find('Creator.refresh()', 1, true),
+    'replicated business and staff changes refresh an open management console')
+H.ok(creator:find("QB.callback.trigger('qbbusinesses:server:removeModule'", 1, true)
+    and creator:find("QB.callback.trigger('qbbusinesses:server:editBusiness'", 1, true)
+    and creator:find("QB.callback.trigger('qbbusinesses:server:deleteBusiness'", 1, true),
+    'AppShell actions still submit intent through the authoritative server callbacks')
+
+local crafting = creator:match('fieldsFor%.Crafting = function%(%).-\nend')
+H.ok(crafting and crafting:find("type = 'multiselect'", 1, true),
+    'crafting benches choose recipes with the shared multiselect field')
+H.ok(crafting and crafting:find('recipes = values.recipes', 1, true),
+    'the selected recipe ids are forwarded as intent for schema validation')
+H.nope(crafting and crafting:find('while true do', 1, true),
+    'crafting no longer loops through one recipe picker per selection')
+
 H.finish('client')
