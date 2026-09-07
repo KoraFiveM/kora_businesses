@@ -58,6 +58,20 @@ RegisterNetEvent('qbbusinesses:client:staff', function(counts)
     Creator.refresh()
 end)
 
+---Rebuild local world handles so qbtarget/qblib pick up an administrator's
+---debug-visualisation preference. This is intentionally client-local: debug
+---outlines are a troubleshooting aid, not shared business data.
+---@param value boolean
+function Client.setDebug(value)
+    Client.debug = value == true
+    for id, business in pairs(live) do
+        local definition = Client.definitions[id]
+        business:destroy()
+        live[id] = Business.new(definition)
+    end
+    Creator.refresh()
+end
+
 ---A job change does not move any zone, but it does change what the player may
 ---see and whether they should be clocked in where they are standing.
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function()

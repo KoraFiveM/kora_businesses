@@ -58,6 +58,14 @@ it wants a map blip. "Where" is never typed in:
 Saving pushes the row to MySQL and the new definition to every connected
 client. The till exists for everyone about two frames later.
 
+Each module card has two editing paths. **Edit data** opens the current module
+as prefilled JSON, so an admin can change labels, access, prices, recipes, or
+advanced anchor values without placing it again; the normal schema validation
+still applies on save. **Rebuild** is for changing a module's type or placing a
+fresh world anchor. The admin-only **Debug** tab can copy the current business
+or selected module JSON and toggle zone/target outlines on that administrator's
+client only.
+
 Crafting benches select all offered recipes in one multiselect field. The
 server still resolves and validates those recipe ids against the shared recipe
 library before saving the module.

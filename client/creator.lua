@@ -348,6 +348,41 @@ local function editModule(business, index, moduleType)
     return ok == true, ok and tonumber(result) or nil
 end
 
+---Edits a saved module directly, retaining its anchor and every field the
+---admin does not touch. This complements Rebuild, which deliberately starts a
+---new placement flow for changing a module's location.
+---@param business table
+---@param index integer
+---@return boolean? saved
+local function editModuleData(business, index)
+    local module = business.modules[index]
+    if not module then return false end
+
+    local encoded = json.encode(module)
+    local values = form({
+        {
+            id = 'data', label = 'Module data (JSON)', type = 'textarea', required = true,
+            default = encoded, rows = 16, maxLength = 16000,
+            description = 'Edit values such as labels, access, prices, recipes, or anchors. Save keeps only valid module data.',
+        },
+    }, ('Edit data · %s'):format(module.label), 'Placement stays as-is unless you edit its anchor fields.')
+    if not values then return end
+
+    local ok, payload = pcall(json.decode, tostring(values.data or ''))
+    if not ok or type(payload) ~= 'table' then
+        Client.notify('Enter a valid JSON object before saving.', 'error')
+        return false
+    end
+
+    -- The module type is part of the selected module's identity here. Rebuild
+    -- is the intentional path for switching types, because each type has a
+    -- different field set and placement rule.
+    payload.moduleType = module.moduleType
+    local saved, err = QB.callback.trigger('qbbusinesses:server:saveModule', business.id, index, payload)
+    Client.notify(saved and 'Module data saved. It is live now.' or (err or 'That data was rejected.'), saved and 'success' or 'error')
+    return saved == true
+end
+
 -- ---------------------------------------------------------------------------
 -- Business management
 -- ---------------------------------------------------------------------------
@@ -502,6 +537,10 @@ local function appDefinition(state)
                 },
                 actions = {
                     {
+                        id = 'businesses:edit-module-data', label = 'Edit data', icon = 'file-pen-line',
+                        variant = 'outline', closeBeforeAction = true,
+                    },
+                    {
                         id = 'businesses:edit-module', label = 'Rebuild', icon = 'pencil-ruler',
                         closeBeforeAction = true,
                     },
@@ -592,6 +631,34 @@ local function appDefinition(state)
                         },
                     },
                     blocks = moduleBlocks,
+                },
+            })
+            table.insert(tabs, {
+                id = 'debug', label = 'Debug', icon = 'bug', content = {
+                    title = 'Diagnostics',
+                    description = 'Inspect live state, copy data for support, or show local world outlines.',
+                    actions = {
+                        { id = 'businesses:toggle-debug', label = Client.debug and 'Hide world debug' or 'Show world debug',
+                            icon = 'bug', variant = Client.debug and 'secondary' or 'outline' },
+                        { id = 'businesses:copy-business-data', label = 'Copy business data', icon = 'copy', variant = 'outline' },
+                        { id = 'businesses:copy-module-data', label = 'Copy selected module', icon = 'copy', variant = 'outline',
+                            disabled = not selectedModule },
+                    },
+                    blocks = {
+                        { type = 'stats', items = {
+                            { label = 'Live revision', value = business.rev or 'Pending', icon = 'git-commit', tone = 'primary' },
+                            { label = 'Modules', value = #business.modules, icon = 'blocks' },
+                            { label = 'World debug', value = Client.debug and 'On' or 'Off', icon = 'bug',
+                                tone = Client.debug and 'warning' or 'neutral', description = 'Only visible on your client.' },
+                        } },
+                        { type = 'details', title = 'Selected module', columns = 2, items = {
+                            { label = 'Selection', value = selectedModule and ('#%d · %s'):format(state.moduleIndex, selectedModule.label) or 'None' },
+                            { label = 'Anchor', value = selectedModule and anchorLabel(selectedModule) or '—' },
+                            { label = 'Interaction', value = selectedModule and S.moduleType[selectedModule.moduleType].interaction or '—' },
+                            { label = 'Access', value = selectedModule and (selectedModule.public and 'Public' or business.job) or '—' },
+                        } },
+                        { type = 'text', title = 'Editing safely', text = 'Edit data changes a module in place and validates it before it goes live. Rebuild is for changing its placement. Copy buttons put the current JSON on your clipboard for backups or support.' },
+                    },
                 },
             })
         end
@@ -728,6 +795,31 @@ local function actionHandler(state)
             if not module then error('That module no longer exists.') end
             launchModuleEditor(state, business.id, index, module.moduleType)
             return
+        elseif actionId == 'businesses:edit-module-data' then
+            local index = math.floor(tonumber(itemId) or 0)
+            if not business.modules[index] then
+                return { notice = { tone = 'destructive', message = 'That module no longer exists.' } }
+            end
+            CreateThread(function()
+                local previousRev = business.rev
+                local saved = editModuleData(business, index)
+                if saved then awaitBusiness(business.id, previousRev) end
+                state.businessId, state.moduleIndex = business.id, index
+                loadBusinessSummary(state)
+                openManagement(state, 'management', 'modules')
+            end)
+            return
+        elseif actionId == 'businesses:toggle-debug' then
+            Client.setDebug(not Client.debug)
+            return { update = appUpdate(state), notice = { tone = 'success', message = Client.debug and 'Local world debug enabled.' or 'Local world debug hidden.' } }
+        elseif actionId == 'businesses:copy-business-data' then
+            QB.nui.copyToClipboard(json.encode(business))
+            return { notice = { tone = 'success', message = 'Business data copied to your clipboard.' } }
+        elseif actionId == 'businesses:copy-module-data' then
+            local module = business.modules[state.moduleIndex or 0]
+            if not module then return { notice = { tone = 'warning', message = 'Select a module to copy its data.' } } end
+            QB.nui.copyToClipboard(json.encode(module))
+            return { notice = { tone = 'success', message = 'Module data copied to your clipboard.' } }
         elseif actionId == 'businesses:remove-module' then
             local index = math.floor(tonumber(itemId) or 0)
             if not business.modules[index] then

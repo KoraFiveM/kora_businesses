@@ -9,6 +9,10 @@ QbBusinesses.client = Client
 Client.definitions = {}
 ---@type table<string, integer> businessId -> staff currently inside
 Client.staff = {}
+---Local-only world visualisation. Administrators can toggle this from the
+---business console without changing the server's configured default or anyone
+---else's client.
+Client.debug = Config.debug == true
 
 ---@param message string
 ---@param kind? QBNotifyType

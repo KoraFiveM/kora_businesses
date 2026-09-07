@@ -233,20 +233,20 @@ function Business:attach(scope, module, entities, options)
     if module.zoneType == 'sphere' then
         id = target:addSphereZone({
             coords = Client.vec3(module.coords), radius = module.radius,
-            options = options, distance = module.distance, debug = Config.debug,
+            options = options, distance = module.distance, debug = Client.debug,
         })
     elseif module.zoneType == 'box' then
         id = target:addBoxZone({
             coords = Client.vec3(module.coords),
             size = vector3(module.size.x, module.size.y, module.size.z),
-            rotation = module.rotation, options = options, distance = module.distance, debug = Config.debug,
+            rotation = module.rotation, options = options, distance = module.distance, debug = Client.debug,
         })
     elseif module.zoneType == 'poly' then
         local points = {}
         for _, point in ipairs(module.points) do points[#points + 1] = Client.vec3(point) end
         id = target:addPolyZone({
             points = points, thickness = module.thickness,
-            options = options, distance = module.distance, debug = Config.debug,
+            options = options, distance = module.distance, debug = Client.debug,
         })
     end
     if id then scope.targets[#scope.targets + 1] = { kind = 'zone', id = id } end
@@ -284,7 +284,7 @@ builders.Zone = function(self, scope, _, module)
     local opts = {
         onEnter = function() self:enter() end,
         onExit = function() self:leave() end,
-        debug = Config.debug,
+        debug = Client.debug,
     }
     if module.zoneType == 'sphere' then
         opts.coords, opts.radius = Client.vec3(module.coords), module.radius
