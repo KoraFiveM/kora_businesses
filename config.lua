@@ -110,3 +110,6 @@ Config.shopItems = {}
 ---First-boot seeds, populated by `shared/businesses/*.lua`. A seed is inserted
 ---only if no row with that id exists yet; it never overwrites in-game edits.
 Config.seeds = {}
+
+-- Registers this resource-owned configuration with qblib without changing its public Config table.
+if QB and QB.config and QB.config.adopt then Config = QB.config.adopt(Config) end
