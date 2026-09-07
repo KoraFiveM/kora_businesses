@@ -633,7 +633,7 @@ local function appDefinition(state)
                     blocks = moduleBlocks,
                 },
             })
-            table.insert(tabs, {
+            tabs[#tabs + 1] = {
                 id = 'debug', label = 'Debug', icon = 'bug', content = {
                     title = 'Diagnostics',
                     description = 'Inspect live state, copy data for support, or show local world outlines.',
@@ -660,7 +660,7 @@ local function appDefinition(state)
                         { type = 'text', title = 'Editing safely', text = 'Edit data changes a module in place and validates it before it goes live. Rebuild is for changing its placement. Copy buttons put the current JSON on your clipboard for backups or support.' },
                     },
                 },
-            })
+            }
         end
 
         navigation[#navigation + 1] = {

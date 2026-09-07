@@ -26,7 +26,7 @@ local function apply(definitions)
 
     for id, business in pairs(live) do
         if not incoming[id] then
-            business:destroy()
+            Business.destroy(business)
             live[id] = nil
             Client.definitions[id] = nil
         end
@@ -42,7 +42,7 @@ local function apply(definitions)
         if not previous or previous.rev ~= definition.rev then
             if live[id] then live[id]:destroy() end
             Client.definitions[id] = definition
-            live[id] = Business.new(definition)
+            live[id] = Business.create(definition)
         end
     end
 
@@ -66,8 +66,8 @@ function Client.setDebug(value)
     Client.debug = value == true
     for id, business in pairs(live) do
         local definition = Client.definitions[id]
-        business:destroy()
-        live[id] = Business.new(definition)
+        Business.destroy(business)
+        live[id] = Business.create(definition)
     end
     Creator.refresh()
 end
@@ -87,7 +87,7 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
         for _, business in pairs(live) do
             if business.inside then
                 if Client.worksFor(business) then
-                    if business.controlDuty and Config.duty.enabled then business:setDuty(true) end
+                    if business.controlDuty and Config.duty.enabled then Business.setDuty(business, true) end
                     QB.callback.trigger('qbbusinesses:server:enter', business.id)
                 else
                     QB.callback.trigger('qbbusinesses:server:leave', business.id)
@@ -126,7 +126,7 @@ AddEventHandler('onClientResourceStop', function(resource)
     -- The server cannot observe one client stopping a resource, so tell it
     -- rather than leaving this player counted as standing in a shop forever.
     TriggerServerEvent('qbbusinesses:server:leaveAll')
-    for _, business in pairs(live) do business:destroy(true) end
+    for _, business in pairs(live) do Business.destroy(business, true) end
     live = {}
 end)
 

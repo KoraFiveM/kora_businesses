@@ -24,14 +24,14 @@ local state = read('client/state.lua')
 
 -- --- yield safety ----------------------------------------------------------
 
-local enter = business:match('function Business:enter%(%).-\nend')
-H.ok(enter, 'Business:enter exists')
-H.ok(enter:find('self.inside = true', 1, true), 'the re-entry guard is set synchronously')
+local enter = business:match('function Business%.enter%(business%).-\nend')
+H.ok(enter, 'Business.enter exists')
+H.ok(enter:find('business.inside = true', 1, true), 'the re-entry guard is set synchronously')
 H.ok(enter:find('CreateThread(function()', 1, true), 'the yielding work runs on its own thread')
-H.ok(enter:find('self.generation ~= generation', 1, true),
+H.ok(enter:find('business.generation ~= generation', 1, true),
     'a build finishing after the player left cleans up instead of orphaning props')
 
-local attach = business:match('function Business:attach.-\nend\n')
+local attach = business:match('function Business%.attach%(business.-\nend\n')
 H.ok(attach and attach:find('option.onSelect = function', 1, true),
     'every target option is wrapped before registration')
 H.ok(attach and attach:find('CreateThread(function() select_', 1, true),

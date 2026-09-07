@@ -31,6 +31,12 @@ H.ok(manifest:find("'shared/schema.lua'", 1, true), 'the schema is shared by bot
 H.ok(manifest:find("'config.lua',", 1, true), 'config loads before the shared files that append to it')
 H.ok(manifest:find('sql/001_businesses.sql', 1, true), 'the migration is a packaged file')
 
+-- Webhook URLs are credentials. The shared config bundle is fetched by every
+-- client, so webhook policy must be loaded by the server alone.
+H.ok(manifest:find("'server/config.lua'", 1, true), 'server-only config is loaded')
+H.nope(read('config.lua'):find('webhooks', 1, true), 'shared config contains no webhook settings')
+H.ok(read('server/config.lua'):find('Config.webhooks', 1, true), 'webhook settings live in server config')
+
 -- Config must load before anything that writes into it, or `Config.recipes`
 -- is nil at the moment a recipe file tries to append to it.
 local configAt = manifest:find("'config.lua'", 1, true)
@@ -115,7 +121,7 @@ H.ok(server:find('ipairs(QB.shared.all', 1, true), 'the job list reads the dense
 -- --- teardown --------------------------------------------------------------
 
 H.ok(client:find('onClientResourceStop', 1, true), 'the client cleans up when the resource stops')
-H.ok(client:find('business:destroy()', 1, true), 'every live business is destroyed on stop')
+H.ok(client:find('Business.destroy(business)', 1, true), 'every live business is destroyed on stop')
 H.ok(client:find('QB.entities.remove', 1, true), 'spawned props are removed')
 H.ok(client:find('QB.blips.remove', 1, true), 'blips are removed')
 H.ok(client:find('removeZone', 1, true) and client:find('removeEntity', 1, true),

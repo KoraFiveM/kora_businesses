@@ -17,7 +17,6 @@ local S = QbBusinesses.schema
 local Client = QbBusinesses.client
 
 local Business = {}
-Business.__index = Business
 QbBusinesses.Business = Business
 
 local target = exports.qbtarget
@@ -64,32 +63,32 @@ end
 
 ---@param definition table
 ---@return table
-function Business.new(definition)
-    local self = setmetatable({
+function Business.create(definition)
+    local business = {
         id = definition.id, label = definition.label, job = definition.job,
         definition = definition,
         hasPerimeter = S.hasPerimeter(definition),
         static = newScope(), dynamic = newScope(), inside = false,
-    }, Business)
-    self:build(self.static, true)
-    return self
+    }
+    Business.build(business, business.static, true)
+    return business
 end
 
 ---@param stopping? boolean Skip the server round-trip (the resource is stopping).
-function Business:destroy(stopping)
-    if self.inside then self:leave(stopping) end
-    clearScope(self.dynamic)
-    clearScope(self.static)
+function Business.destroy(business, stopping)
+    if business.inside then Business.leave(business, stopping) end
+    clearScope(business.dynamic)
+    clearScope(business.static)
 end
 
 ---@param scope table
 ---@param startup boolean
-function Business:build(scope, startup)
-    for index, module in ipairs(self.definition.modules) do
-        if S.isStartupModule(self.definition, module) == startup then
-            local ok, err = pcall(self.setup, self, scope, index, module)
+function Business.build(business, scope, startup)
+    for index, module in ipairs(business.definition.modules) do
+        if S.isStartupModule(business.definition, module) == startup then
+            local ok, err = pcall(Business.setup, business, scope, index, module)
             if not ok then
-                print(('^3[qbbusinesses]^7 %s module #%d (%s) failed: %s'):format(self.id, index, module.moduleType, tostring(err)))
+                print(('^3[qbbusinesses]^7 %s module #%d (%s) failed: %s'):format(business.id, index, module.moduleType, tostring(err)))
             end
         end
     end
@@ -103,43 +102,43 @@ end
 ---`generation` is what makes that safe: walking back out while the props are
 ---still streaming bumps it, and the build thread cleans up after itself instead
 ---of leaving orphaned entities and targets behind a player who already left.
-function Business:enter()
-    if self.inside then return end
-    self.inside = true
-    self.generation = (self.generation or 0) + 1
+function Business.enter(business)
+    if business.inside then return end
+    business.inside = true
+    business.generation = (business.generation or 0) + 1
 
-    local generation = self.generation
+    local generation = business.generation
     CreateThread(function()
-        self:build(self.dynamic, false)
-        if self.generation ~= generation then return clearScope(self.dynamic) end
+        Business.build(business, business.dynamic, false)
+        if business.generation ~= generation then return clearScope(business.dynamic) end
 
-        if Client.worksFor(self) then
-            if self.controlDuty and Config.duty.enabled then self:setDuty(true) end
+        if Client.worksFor(business) then
+            if business.controlDuty and Config.duty.enabled then Business.setDuty(business, true) end
             -- Presence means on-duty staff. Auto-duty therefore commits first;
             -- the following callback is independently revalidated server-side.
-            QB.callback.trigger('qbbusinesses:server:enter', self.id)
+            QB.callback.trigger('qbbusinesses:server:enter', business.id)
         end
     end)
 end
 
 ---@param teardownOnly? boolean Skip the server round-trip (resource stopping).
-function Business:leave(teardownOnly)
-    if not self.inside then return end
-    self.inside = false
-    self.generation = (self.generation or 0) + 1
-    clearScope(self.dynamic)
+function Business.leave(business, teardownOnly)
+    if not business.inside then return end
+    business.inside = false
+    business.generation = (business.generation or 0) + 1
+    clearScope(business.dynamic)
     if teardownOnly then return end
 
-    if Client.worksFor(self) then
+    if Client.worksFor(business) then
         CreateThread(function()
-            QB.callback.trigger('qbbusinesses:server:leave', self.id)
-            if self.controlDuty and Config.duty.enabled then self:setDuty(false) end
+            QB.callback.trigger('qbbusinesses:server:leave', business.id)
+            if business.controlDuty and Config.duty.enabled then Business.setDuty(business, false) end
         end)
     end
 end
 
 ---@param onDuty boolean
-function Business:setDuty(onDuty)
+function Business.setDuty(business, onDuty)
     local job = Client.job()
     if job.onduty == onDuty then return end
 
@@ -148,11 +147,11 @@ function Business:setDuty(onDuty)
         local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
         if vehicle ~= 0 then
             local plate = GetVehicleNumberPlateText(vehicle) or ''
-            if plate:sub(1, 3):lower() == self.job:sub(1, 3):lower() then return end
+            if plate:sub(1, 3):lower() == business.job:sub(1, 3):lower() then return end
         end
     end
 
-    QB.callback.trigger('qbbusinesses:server:setDuty', self.id, onDuty)
+    QB.callback.trigger('qbbusinesses:server:setDuty', business.id, onDuty)
 end
 
 -- ---------------------------------------------------------------------------
@@ -162,7 +161,7 @@ end
 ---@param scope table
 ---@param module table
 ---@return integer[] entities
-function Business:spawn(scope, module)
+function Business.spawn(business, scope, module)
     local entities = {}
     for _, coords in ipairs(module.coords) do
         if module.model.existing then
@@ -193,8 +192,8 @@ end
 ---@param module table
 ---@param entities integer[]
 ---@param options table[]
-function Business:attach(scope, module, entities, options)
-    local job = (not module.public) and self.job or nil
+function Business.attach(business, scope, module, entities, options)
+    local job = (not module.public) and business.job or nil
 
     for _, option in ipairs(options) do
         option.distance = option.distance or module.distance
@@ -268,22 +267,22 @@ end
 
 local builders = {}
 
-function Business:setup(scope, index, module)
+function Business.setup(business, scope, index, module)
     local builder = builders[module.moduleType]
     if not builder then return end
 
-    local entities = module.model and self:spawn(scope, module) or {}
+    local entities = module.model and Business.spawn(business, scope, module) or {}
     if module.blip then addBlip(scope, module.blip) end
 
-    local options = builder(self, scope, index, module, entities)
-    if options and #options > 0 then self:attach(scope, module, entities, options) end
+    local options = builder(business, scope, index, module, entities)
+    if options and #options > 0 then Business.attach(business, scope, module, entities, options) end
 end
 
-builders.Zone = function(self, scope, _, module)
-    self.controlDuty = module.controlDuty
+builders.Zone = function(business, scope, _, module)
+    business.controlDuty = module.controlDuty
     local opts = {
-        onEnter = function() self:enter() end,
-        onExit = function() self:leave() end,
+        onEnter = function() Business.enter(business) end,
+        onExit = function() Business.leave(business) end,
         debug = Client.debug,
     }
     if module.zoneType == 'sphere' then
@@ -309,11 +308,11 @@ end
 
 builders.StaticEntity = function() return nil end
 
-builders.BossMenu = function(self, _, _, module)
+builders.BossMenu = function(business, _, _, module)
     return { {
         label = module.label,
         icon = module.icon or 'Briefcase',
-        canInteract = function() return Client.isBoss(self) end,
+        canInteract = function() return Client.isBoss(business) end,
         onSelect = function()
             if GetResourceState('qbbossmenu') ~= 'started' then
                 return Client.notify('The boss menu is unavailable.', 'error')
@@ -334,7 +333,7 @@ builders.Stash = function(_, _, _, module)
     } }
 end
 
-builders.POS = function(self, _, _, module)
+builders.POS = function(business, _, _, module)
     local options = {}
 
     options[#options + 1] = {
@@ -344,8 +343,8 @@ builders.POS = function(self, _, _, module)
         ignoreJobLock = true,
         canInteract = function()
             if not module.hideWhenStaffed then return true end
-            if Client.worksFor(self) then return true end
-            return (Client.staff[self.id] or 0) == 0
+            if Client.worksFor(business) then return true end
+            return (Client.staff[business.id] or 0) == 0
         end,
         onSelect = function()
             local ok, err = QB.callback.trigger('qbbusinesses:server:openShop', module.id)
@@ -359,7 +358,7 @@ builders.POS = function(self, _, _, module)
     options[#options + 1] = {
         label = 'Restock',
         icon = 'PackagePlus',
-        canInteract = function() return Client.worksFor(self) end,
+        canInteract = function() return Client.worksFor(business) end,
         onSelect = function()
             local ok, err = QB.callback.trigger('qbbusinesses:server:openStock', module.id)
             if not ok then Client.notify(err or 'You cannot restock this till.', 'error') end
@@ -369,14 +368,14 @@ builders.POS = function(self, _, _, module)
     options[#options + 1] = {
         label = 'Set prices',
         icon = 'DollarSign',
-        canInteract = function() return Client.isBoss(self) end,
+        canInteract = function() return Client.isBoss(business) end,
         onSelect = function() QbBusinesses.openPriceEditor(module.id) end,
     }
 
     options[#options + 1] = {
         label = 'Take a payment',
         icon = 'CreditCard',
-        canInteract = function() return Client.worksFor(self) end,
+        canInteract = function() return Client.worksFor(business) end,
         onSelect = function() QbBusinesses.takePayment() end,
     }
 
@@ -384,9 +383,9 @@ builders.POS = function(self, _, _, module)
         options[#options + 1] = {
             label = 'Panic button',
             icon = 'Siren',
-            canInteract = function() return Client.worksFor(self) end,
+            canInteract = function() return Client.worksFor(business) end,
             onSelect = function()
-                local ok, err = QB.callback.trigger('qbbusinesses:server:panic', self.id, module.id)
+                local ok, err = QB.callback.trigger('qbbusinesses:server:panic', business.id, module.id)
                 Client.notify(ok and 'Silent alarm sent.' or (err or 'The alarm did not go through.'), ok and 'success' or 'error')
             end,
         }
@@ -396,10 +395,10 @@ builders.POS = function(self, _, _, module)
 end
 
 ---Renders one bench's recipe list, with live ingredient counts.
----@param self table
+---@param business table
 ---@param index integer
 ---@param module table
-local function openCraftingMenu(self, index, module)
+local function openCraftingMenu(business, index, module)
     local items = {}
     for _, recipeId in ipairs(module.recipes) do
         local recipe = Config.recipes[recipeId]
@@ -441,14 +440,14 @@ local function openCraftingMenu(self, index, module)
         if not completed then return end
     end
 
-    local ok, message = QB.callback.trigger('qbbusinesses:server:craft', self.id, index, choice.selectedId)
+    local ok, message = QB.callback.trigger('qbbusinesses:server:craft', business.id, index, choice.selectedId)
     Client.notify(message or (ok and 'Done.' or 'That did not work.'), ok and 'success' or 'error')
 end
 
-builders.Crafting = function(self, _, index, module)
+builders.Crafting = function(business, _, index, module)
     return { {
         label = module.label,
         icon = module.icon or 'Hammer',
-        onSelect = function() openCraftingMenu(self, index, module) end,
+        onSelect = function() openCraftingMenu(business, index, module) end,
     } }
 end

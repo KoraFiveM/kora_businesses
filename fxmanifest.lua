@@ -27,6 +27,7 @@ shared_scripts {
 -- Load order is deliberate: `state` owns the registry every other file reads,
 -- and `main` runs the boot sequence once the rest have registered themselves.
 server_scripts {
+    'server/config.lua',
     'server/state.lua',
     'server/logs.lua',
     'server/staff.lua',

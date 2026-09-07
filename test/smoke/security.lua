@@ -149,7 +149,8 @@ end
 
 local order = {}
 for file in manifest:gmatch("'(server/[%w_]+%.lua)'") do order[#order + 1] = file end
-H.equal(order[1], 'server/state.lua', 'state loads first: everything else reads its registry')
+H.equal(order[1], 'server/config.lua', 'server-only credentials load before server consumers')
+H.equal(order[2], 'server/state.lua', 'state loads before every registry consumer')
 H.equal(order[#order], 'server/main.lua', 'main boots last, once everything has registered')
 local positions = {}
 for index, file in ipairs(order) do positions[file] = index end

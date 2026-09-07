@@ -68,12 +68,6 @@ Config.duty = {
     keepDutyInJobVehicle = true,
 }
 
----Discord webhooks. `default` receives everything; a per-job key receives that
----job's business events as well. Empty strings are skipped.
-Config.webhooks = {
-    default = '',
-}
-
 Config.logs = {
     ---Rows kept per business in `qbbusinesses_logs`; older rows are trimmed.
     retain = 500,
