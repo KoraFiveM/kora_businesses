@@ -9,6 +9,9 @@ Config = {
     pos = { shopSlots = 50, stockSlots = 50, currency = 'cash' },
     recipes = {}, shopItems = {}, seeds = {},
 }
+QB = { blips = { getCategoryIds = function()
+    return { Business = 15, Restaurant = 34 }
+end } }
 
 local S = dofile('shared/schema.lua')
 
@@ -128,6 +131,31 @@ local useable = S.normaliseModule({
 H.equal(useable.item, 'mystery_box', 'item names are lowercased')
 H.equal(useable.rewards[1].chance, 5.0, 'a reward weight survives')
 H.equal(useable.rewards[2].amount, 1, 'a reward amount defaults to one')
+
+local businessBlip = S.normaliseModule({
+    moduleType = 'Blip', label = 'Burger Shot',
+    coords = { x = 1, y = 2, z = 3 },
+})
+H.equal(businessBlip.category, 'Business', 'business blips default to the canonical category')
+H.equal(businessBlip.name, 'Burger Shot', 'legacy label data remains a storefront name')
+H.equal(businessBlip.label, 'Burger Shot', 'the module label remains available outside the map API')
+
+local restaurantBlip = S.normaliseModule({
+    moduleType = 'Blip', label = 'Burger Shot', category = 'Restaurant', name = 'Burger Shot',
+    coords = { x = 1, y = 2, z = 3 },
+})
+H.equal(restaurantBlip.category, 'Restaurant', 'known business types retain their functional category')
+refuses('an unknown blip category is refused before reaching the client', {
+    moduleType = 'Blip', category = 'Typo Category', coords = { x = 1, y = 2, z = 3 },
+})
+
+local nestedBlip = S.normaliseModule({
+    moduleType = 'Stash', id = 'counter', label = 'Bean Machine',
+    zoneType = 'sphere', coords = { x = 0, y = 0, z = 0 },
+    blip = { enabled = true, category = 'Business', name = 'Bean Machine' },
+})
+H.equal(nestedBlip.blip.category, 'Business', 'nested blips retain their category')
+H.equal(nestedBlip.blip.name, 'Bean Machine', 'nested blips retain their storefront name')
 
 -- --- business assembly -----------------------------------------------------
 

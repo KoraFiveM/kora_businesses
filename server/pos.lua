@@ -12,6 +12,10 @@ local State = QbBusinesses.state
 local Logs = QbBusinesses.logs
 local Staff = QbBusinesses.staff
 
+---@class QBBossMenuLedgerExports
+---@field addBusinessMoney fun(self: QBBossMenuLedgerExports, jobName: string, amount: number, reason?: string): boolean, string?
+---@field removeBusinessMoney fun(self: QBBossMenuLedgerExports, jobName: string, amount: number, reason?: string): boolean, string?
+
 local Pos = {}
 QbBusinesses.pos = Pos
 
@@ -127,7 +131,9 @@ function Pos.credit(job, amount, reason)
     amount = math.floor(amount or 0)
     if amount <= 0 then return true end
     if not bossMenuReady() then return false, 'no business account resource is running' end
-    return exports.qbbossmenu:addBusinessMoney(job, amount, reason)
+    ---@type QBBossMenuLedgerExports
+    local bossMenu = exports.qbbossmenu
+    return bossMenu:addBusinessMoney(job, amount, reason)
 end
 
 ---@param job string
@@ -138,7 +144,9 @@ function Pos.debit(job, amount, reason)
     amount = math.floor(amount or 0)
     if amount <= 0 then return true end
     if not bossMenuReady() then return false, 'no business account resource is running' end
-    return exports.qbbossmenu:removeBusinessMoney(job, amount, reason)
+    ---@type QBBossMenuLedgerExports
+    local bossMenu = exports.qbbossmenu
+    return bossMenu:removeBusinessMoney(job, amount, reason)
 end
 
 -- ---------------------------------------------------------------------------

@@ -10,6 +10,9 @@ Config = {
     pos = { shopSlots = 50, stockSlots = 50, currency = 'cash' },
     recipes = {}, shopItems = {}, seeds = {},
 }
+QB = { blips = { getCategoryIds = function()
+    return { Business = 15, Restaurant = 34 }
+end } }
 
 local S = dofile('shared/schema.lua')
 

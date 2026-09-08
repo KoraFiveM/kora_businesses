@@ -30,6 +30,12 @@ H.ok(manifest:find("'@qbcore/init.lua'", 1, true), 'loads the qbcore mirror')
 H.ok(manifest:find("'shared/schema.lua'", 1, true), 'the schema is shared by both realms')
 H.ok(manifest:find("'config.lua',", 1, true), 'config loads before the shared files that append to it')
 H.ok(manifest:find('sql/001_businesses.sql', 1, true), 'the migration is a packaged file')
+H.ok(client:find('QB.blips.getCategoryIds()', 1, true),
+    'the creator category select comes from qblib instead of free text')
+H.ok(client:find("type = 'select'", 1, true) and client:find("default = 'Business'", 1, true),
+    'the creator offers a safe category selection with a Business fallback')
+H.nope(client:find('label = values.name or values.category', 1, true),
+    'new blips do not preformat or override qblib category/name labels')
 
 -- Webhook URLs are credentials. The shared config bundle is fetched by every
 -- client, so webhook policy must be loaded by the server alone.
@@ -80,6 +86,25 @@ end
 for _, name in ipairs({ 'getBusinesses', 'openBusinessMenu' }) do
     H.ok(client:find(("exports('%s'"):format(name), 1, true), ('client export %s'):format(name))
 end
+
+-- qbbossmenu is optional at runtime, but every method invoked through its
+-- dynamic export proxy must still exist in the corresponding realm. Read the
+-- sibling source so a provider rename fails this consumer's suite immediately.
+local bossMenuClient = read('../qbbossmenu/client/main.lua')
+local bossMenuServer = read('../qbbossmenu/server/main.lua')
+for _, name in ipairs({ 'openBossMenu' }) do
+    H.ok(client:find(('bossMenu:%s('):format(name), 1, true), ('client calls qbbossmenu:%s'):format(name))
+    H.ok(bossMenuClient:find(("exports('%s'"):format(name), 1, true),
+        ('qbbossmenu declares client export %s'):format(name))
+end
+for _, name in ipairs({ 'addBusinessMoney', 'removeBusinessMoney', 'getBusinessBalance' }) do
+    H.ok(server:find(('bossMenu:%s('):format(name), 1, true), ('server calls qbbossmenu:%s'):format(name))
+    H.ok(bossMenuServer:find(("exports('%s'"):format(name), 1, true),
+        ('qbbossmenu declares server export %s'):format(name))
+end
+H.ok(client:find('---@type QBBossMenuClientExports', 1, true), 'client boss-menu proxy has a LuaLS contract')
+H.ok(server:find('---@type QBBossMenuLedgerExports', 1, true), 'ledger proxy has a LuaLS contract')
+H.ok(server:find('---@type QBBossMenuBalanceExports', 1, true), 'balance proxy has a LuaLS contract')
 
 -- --- integration seams -----------------------------------------------------
 --

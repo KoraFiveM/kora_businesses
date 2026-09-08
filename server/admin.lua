@@ -12,6 +12,9 @@ local State = QbBusinesses.state
 local Logs = QbBusinesses.logs
 local Staff = QbBusinesses.staff
 
+---@class QBBossMenuBalanceExports
+---@field getBusinessBalance fun(self: QBBossMenuBalanceExports, jobName: string): number?, string?
+
 ---@param business table
 ---@return table[] a detached copy of the module list
 local function copyModules(business)
@@ -164,7 +167,9 @@ QB.callback.register('qbbusinesses:server:balance', function(src, businessId)
     local business, err = authorise(src, businessId, false)
     if not business then return nil, err end
     if GetResourceState('qbbossmenu') ~= 'started' then return nil, 'No business account resource is running.' end
-    return exports.qbbossmenu:getBusinessBalance(business.job)
+    ---@type QBBossMenuBalanceExports
+    local bossMenu = exports.qbbossmenu
+    return bossMenu:getBusinessBalance(business.job)
 end, { rateLimit = { max = 10, window = 10000 } })
 
 -- ---------------------------------------------------------------------------

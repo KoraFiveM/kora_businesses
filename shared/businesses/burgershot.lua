@@ -47,6 +47,8 @@ Config.seeds[#Config.seeds + 1] = {
         {
             moduleType = 'Blip',
             label = 'Burger Shot',
+            category = 'Restaurant',
+            name = 'Burger Shot',
             coords = { x = -1193.0, y = -893.0, z = 13.9 },
             sprite = 106,
             color = 1,

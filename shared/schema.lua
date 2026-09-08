@@ -18,6 +18,7 @@ QbBusinesses.schema = S
 
 local MAX_POLY_POINTS = 64
 local MAX_ENTITY_COORDS = 32
+local BLIP_CATEGORY_IDS = QB.blips.getCategoryIds()
 
 ---@param value any
 ---@param maxLength? integer
@@ -47,6 +48,13 @@ local function int(value, min, max)
 end
 
 local function bool(value) return value == true end
+
+---@param value any
+---@return string|nil
+local function blipCategory(value)
+    local name = str(value, 64) or 'Business'
+    return BLIP_CATEGORY_IDS[name] and name or nil
+end
 
 S.str, S.num, S.int, S.bool = str, num, int, bool
 
@@ -207,13 +215,18 @@ end
 ---@return table|nil
 local function normaliseBlip(raw)
     if type(raw) ~= 'table' or raw.enabled == false then return nil end
+    local category = blipCategory(raw.category)
+    if not category then return nil end
     return {
         enabled = true,
         sprite = int(raw.sprite, 0, 900) or 1,
         color = int(raw.color, 0, 90) or 1,
         scale = num(raw.scale, 0.1, 3.0) or 0.7,
         display = int(raw.display, 0, 11) or 4,
-        label = str(raw.label, 64),
+        category = category,
+        -- `label` is the pre-category/name field used by persisted definitions
+        -- from before qblib composed display labels itself.
+        name = str(raw.name, 64) or str(raw.label, 64),
         shortRange = raw.shortRange ~= false,
         coords = S.coords(raw.coords),
     }
@@ -242,6 +255,9 @@ payloads.Blip = function(mod, out)
     out.scale = num(mod.scale, 0.1, 3.0) or 0.7
     out.display = int(mod.display, 0, 11) or 4
     out.shortRange = mod.shortRange ~= false
+    out.category = blipCategory(mod.category)
+    if not out.category then return false, 'unknown blip category' end
+    out.name = str(mod.name, 64) or str(mod.label, 64)
     return true
 end
 
@@ -350,7 +366,7 @@ function S.normaliseModule(raw)
 
     local out = {
         moduleType = kind,
-        label = str(raw.label, 64) or descriptor.label,
+        label = str(raw.label, 64) or (kind == 'Blip' and str(raw.name, 64)) or descriptor.label,
         icon = str(raw.icon, 48),
         public = bool(raw.public),
         distance = num(raw.distance, 0.5, 20.0) or 2.0,
@@ -367,7 +383,7 @@ function S.normaliseModule(raw)
             blip.coords = out.zoneType and out.coords or (out.coords and out.coords[1])
         end
         if blip.coords then
-            blip.label = blip.label or out.label
+            blip.name = blip.name or out.label
             out.blip = blip
         end
     end

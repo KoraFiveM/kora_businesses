@@ -21,6 +21,9 @@ QbBusinesses.Business = Business
 
 local target = exports.qbtarget
 
+---@class QBBossMenuClientExports
+---@field openBossMenu fun(self: QBBossMenuClientExports)
+
 local function newScope()
     return { zones = {}, blips = {}, entities = {}, targets = {} }
 end
@@ -255,10 +258,10 @@ end
 ---@param blip table
 local function addBlip(scope, blip)
     local handle = QB.blips.create(vector3(blip.coords.x, blip.coords.y, blip.coords.z), {
-        sprite = blip.sprite, color = blip.color, scale = blip.scale,
-        shortRange = blip.shortRange, label = blip.label,
+        sprite = blip.sprite, color = blip.color, scale = blip.scale, display = blip.display,
+        shortRange = blip.shortRange, category = blip.category, name = blip.name,
         info = blip.info or {
-            title = blip.label or 'Business',
+            title = blip.name or blip.category or 'Business',
             rows = {
                 { kind = 'wrappedText', value = 'Business services are available at this location.' },
             },
@@ -307,8 +310,9 @@ end
 
 builders.Blip = function(_, scope, _, module)
     addBlip(scope, {
-        coords = module.coords, sprite = module.sprite, color = module.color,
-        scale = module.scale, shortRange = module.shortRange, label = module.label,
+        coords = module.coords, sprite = module.sprite, color = module.color, display = module.display,
+        scale = module.scale, shortRange = module.shortRange,
+        category = module.category, name = module.name,
     })
 end
 
@@ -323,7 +327,9 @@ builders.BossMenu = function(business, _, _, module)
             if GetResourceState('qbbossmenu') ~= 'started' then
                 return Client.notify('The boss menu is unavailable.', 'error')
             end
-            exports.qbbossmenu:openBossMenu()
+            ---@type QBBossMenuClientExports
+            local bossMenu = exports.qbbossmenu
+            bossMenu:openBossMenu()
         end,
     } }
 end

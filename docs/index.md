@@ -13,7 +13,7 @@ to the server to every client.
 | `icon` | string | Lucide icon key. |
 | `public` | boolean | Drops the job lock on this module's target options. |
 | `distance` | number | Interaction distance, 0.5–20. Defaults to 2.0. |
-| `blip` | table | `{ enabled, label, sprite, color, scale, display, shortRange, coords? }`. Falls back to the module's own anchor when `coords` is omitted. |
+| `blip` | table | `{ enabled, category, name?, sprite, color, scale, display, shortRange, coords? }`. `category` defaults to `Business`; qblib renders `Category: Name` when a specific location/storefront name is present. Falls back to the module's own anchor when `coords` is omitted. Legacy persisted `label` values are accepted as `name`. |
 
 ## Anchors
 
@@ -43,7 +43,10 @@ the business lazy: without one, everything is built as soon as the business is
 known.
 
 ### `Blip` — a map marker
-No anchor. `coords`, `sprite`, `color`, `scale`, `display`, `shortRange`.
+No anchor. `coords`, `category` (default `Business`), optional location or
+storefront `name`, `sprite`, `color`, `scale`, `display`, `shortRange`.
+The in-game creator obtains its category select from
+`QB.blips.getCategoryIds()`, so it cannot persist an unknown category.
 
 ### `StaticEntity` — decoration
 Entity anchor only. No interaction.

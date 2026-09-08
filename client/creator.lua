@@ -19,6 +19,16 @@ QbBusinesses.creator = Creator
 
 local isAdmin = false
 
+local function blipCategoryOptions()
+    local names = {}
+    for name in pairs(QB.blips.getCategoryIds()) do names[#names + 1] = name end
+    table.sort(names)
+
+    local options = {}
+    for _, name in ipairs(names) do options[#options + 1] = { value = name, label = name } end
+    return options
+end
+
 ---@param items table[]
 ---@param title string
 ---@return string|nil selectedId
@@ -163,7 +173,9 @@ local function pickBlip()
     if not values or not values.wanted then return nil end
 
     local blip = form({
-        { id = 'label', label = 'Blip name', type = 'text' },
+        { id = 'category', label = 'Map category', type = 'select', required = true,
+          default = 'Business', options = blipCategoryOptions() },
+        { id = 'name', label = 'Location or storefront name', type = 'text' },
         { id = 'sprite', label = 'Sprite', type = 'number', default = 1, min = 0, max = 900 },
         { id = 'color', label = 'Colour', type = 'number', default = 1, min = 0, max = 90 },
         { id = 'scale', label = 'Scale', type = 'number', default = 0.7, min = 0.1, max = 3.0 },
@@ -171,7 +183,7 @@ local function pickBlip()
     if not blip then return nil end
 
     return {
-        enabled = true, label = blip.label, sprite = blip.sprite,
+        enabled = true, category = blip.category, name = blip.name, sprite = blip.sprite,
         color = blip.color, scale = blip.scale,
     }
 end
@@ -192,7 +204,9 @@ end
 
 fieldsFor.Blip = function()
     local values = form({
-        { id = 'label', label = 'Blip name', type = 'text', required = true },
+        { id = 'category', label = 'Map category', type = 'select', required = true,
+          default = 'Business', options = blipCategoryOptions() },
+        { id = 'name', label = 'Location or storefront name', type = 'text' },
         { id = 'sprite', label = 'Sprite', type = 'number', default = 1, min = 0, max = 900 },
         { id = 'color', label = 'Colour', type = 'number', default = 1, min = 0, max = 90 },
         { id = 'scale', label = 'Scale', type = 'number', default = 0.7, min = 0.1, max = 3.0 },
@@ -200,7 +214,8 @@ fieldsFor.Blip = function()
     if not values then return nil end
     local coords = GetEntityCoords(PlayerPedId())
     return {
-        label = values.label, sprite = values.sprite, color = values.color, scale = values.scale,
+        category = values.category, name = values.name,
+        sprite = values.sprite, color = values.color, scale = values.scale,
         coords = { x = coords.x, y = coords.y, z = coords.z },
     }
 end
