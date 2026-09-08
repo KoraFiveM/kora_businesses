@@ -257,6 +257,12 @@ local function addBlip(scope, blip)
     local handle = QB.blips.create(vector3(blip.coords.x, blip.coords.y, blip.coords.z), {
         sprite = blip.sprite, color = blip.color, scale = blip.scale,
         shortRange = blip.shortRange, label = blip.label,
+        info = blip.info or {
+            title = blip.label or 'Business',
+            rows = {
+                { kind = 'wrappedText', value = 'Business services are available at this location.' },
+            },
+        },
     })
     if handle then scope.blips[#scope.blips + 1] = handle end
 end
