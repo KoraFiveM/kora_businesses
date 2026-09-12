@@ -19,6 +19,7 @@ exports = {
     },
 }
 QB = {
+    util = { fnv1a = function() return '811c9dc5' end },
     distance = {
         player = function(src, point, distance)
             local p = players[src].coords

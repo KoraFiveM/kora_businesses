@@ -19,17 +19,11 @@ State.businesses = {}
 
 local RESOURCE = GetCurrentResourceName()
 
----FNV-1a. Used both to fingerprint a definition for the clients and to stamp
----the migration; one implementation so the two cannot drift.
+---FNV-1a fingerprints definitions for clients and matches the checksum used
+---for this resource's migration files.
 ---@param value string
 ---@return string
-local function checksum(value)
-    local hash = 2166136261
-    for i = 1, #value do hash = ((hash ~ value:byte(i)) * 16777619) & 0xFFFFFFFF end
-    return ('%08x'):format(hash)
-end
-
-QbBusinesses.checksum = checksum
+local checksum = QB.util.fnv1a
 
 ---A definition's fingerprint, computed once here rather than by each client.
 ---Clients rebuild a business only when this changes, so an edit to one business

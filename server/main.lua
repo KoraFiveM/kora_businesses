@@ -8,17 +8,14 @@ local Logs = QbBusinesses.logs
 
 local RESOURCE = GetCurrentResourceName()
 
--- qbsql compares this against the recorded checksum, so an edited migration is
--- caught instead of silently skipped.
-local checksum = QbBusinesses.checksum
-
 CreateThread(function()
     if not QB.sql.ready(60000) then
         return print('^1[qbbusinesses]^7 qbsql was not ready; resource disabled.')
     end
 
-    local sql = assert(LoadResourceFile(RESOURCE, 'sql/001_businesses.sql'), 'missing qbbusinesses migration')
-    local _, err = QB.sql.migrate(RESOURCE, { { version = 1, name = 'businesses', sql = sql, checksum = checksum(sql) } })
+    local _, err = QB.sql.migrateFiles(RESOURCE, {
+        { version = 1, name = 'businesses', file = 'sql/001_businesses.sql' },
+    })
     if err then return print(('^1[qbbusinesses]^7 migration failed: %s'):format(err)) end
 
     Pos.loadPrices()
