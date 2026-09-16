@@ -64,9 +64,7 @@ handlers.Stash = function(business, module)
         record.module.public and nil or { [business.job] = 0 }, record.coords, record.distance)
 end
 
-handlers.POS = function(business, module)
-    Pos.register(business, module)
-end
+handlers.POS = Pos.register
 
 handlers.UseableItem = function(business, module)
     -- A use handler is global to an item name, so binding the same item twice
