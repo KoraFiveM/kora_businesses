@@ -22,6 +22,7 @@ shared_scripts {
     'shared/recipes/*.lua',
     'shared/shopitems/*.lua',
     'shared/businesses/*.lua',
+    'shared/config_registration.lua',
 }
 
 -- Load order is deliberate: `state` owns the registry every other file reads,
