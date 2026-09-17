@@ -8,8 +8,8 @@ Config.shopItems = QB.config.map(Config.shopItems, QB.config.list({}, QB.config.
     label = 'Shop item libraries',
     description = 'Maps each reusable shop-list name to an ordered array of fixed-price item definitions. Point-of-sale modules reference the list name, so edits affect every business seed or live definition that uses that library after the resource restarts.',
 })
-Config.seeds = QB.config.map(Config.seeds, QB.config.object({}), {
+Config.seeds = QB.config.list(Config.seeds, QB.config.object({}), {
     label = 'First-boot business seeds',
-    description = 'Maps stable business IDs to first-boot business definitions. Seeds are inserted only when the database has no row with that ID and never overwrite in-game edits, so changing an existing seed does not replace an already-created business.',
+    description = 'Defines the ordered first-boot business definitions. Each row contains its own stable business ID; seeds are inserted only when the database has no row with that ID and never overwrite in-game edits, so changing an existing seed does not replace an already-created business.',
 })
 Config = QB.config.adopt(Config)
