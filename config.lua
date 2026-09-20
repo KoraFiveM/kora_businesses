@@ -1,17 +1,48 @@
 Config = {}
+Globals = {}
+
+Config.Mechanic = true
+Config.Taxi = false
 
 Config.enable = {
-    mechanic = true,
-    taxi = true
+    {
+        name = 'mechanic',
+        enabled = Config.Mechanic,
+        filepaths = {
+            server = { 'jobs/mechanic/server.lua' },
+            client = { 'jobs/mechanic/client.lua' },
+            shared = { 'jobs/mechanic/shared.lua' },
+        },
+    },
+    {
+        name = 'taxi',
+        enabled = Config.Taxi,
+        filepaths = {
+            server = { 'jobs/taxi/server.lua' },
+            client = { 'jobs/taxi/client.lua' },
+            shared = { 'jobs/taxi/shared.lua' },
+        },
+    },
 }
 
-for job, bool in pairs(Config.enable) do
-    if bool then
-        if IsDuplicityVersion() then
-            QB.require.current('jobs/' .. job .. '/server.lua')
-        else
-            QB.require.current('jobs/' .. job .. '/client.lua')
-        end
-        QB.require.current('jobs/' .. job .. '/shared.lua')
+local function requireAll(list)
+    if not list then return end
+    for i = 1, #list do
+        QB.require.current(list[i])
     end
 end
+
+local isServer = IsDuplicityVersion()
+
+for _, job in ipairs(Config.enable) do
+    if job.enabled then
+        local paths = job.filepaths or {}
+        requireAll(paths.shared)
+        requireAll(isServer and paths.server or paths.client)
+    else
+        print(('[jobs] %s is disabled, skipping'):format(job.name))
+    end
+end
+Globals.Config = Config
+
+QB.require.current('init.lua')
