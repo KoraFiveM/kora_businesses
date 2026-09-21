@@ -2,7 +2,8 @@ Config = {}
 Globals = {}
 
 Config.Mechanic = true
-Config.Taxi = false
+Config.Taxi = true
+Config.Garbage = true
 
 Config.enable = {
     {
@@ -21,6 +22,15 @@ Config.enable = {
             server = { 'jobs/taxi/server.lua' },
             client = { 'jobs/taxi/client.lua' },
             shared = { 'jobs/taxi/shared.lua' },
+        },
+    },
+    {
+        name = 'garbage',
+        enabled = Config.Garbage,
+        filepaths = {
+            server = { 'jobs/garbage/server.lua' },
+            client = { 'jobs/garbage/client.lua' },
+            shared = { 'jobs/garbage/shared.lua' },
         },
     },
 }
@@ -43,6 +53,7 @@ for _, job in ipairs(Config.enable) do
         print(('[jobs] %s is disabled, skipping'):format(job.name))
     end
 end
+
 Globals.Config = Config
 
 QB.require.current('init.lua')
