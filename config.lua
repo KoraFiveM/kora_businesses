@@ -4,7 +4,7 @@ Globals = {}
 Config.Mechanic = true
 Config.Taxi = true
 Config.Garbage = true
-
+Config.Recycle = true
 Config.enable = {
     {
         name = 'mechanic',
@@ -31,6 +31,15 @@ Config.enable = {
             server = { 'jobs/garbage/server.lua' },
             client = { 'jobs/garbage/client.lua' },
             shared = { 'jobs/garbage/shared.lua' },
+        },
+    },
+    {
+        name = 'recycle',
+        enabled = Config.Recycle,
+        filepaths = {
+            server = { 'jobs/recycle/server.lua' },
+            client = { 'jobs/recycle/client.lua', 'jobs/recycle/sales.lua' },
+            shared = { 'jobs/recycle/shared.lua' },
         },
     },
 }
