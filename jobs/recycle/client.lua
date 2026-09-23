@@ -103,6 +103,9 @@ local function ExitLocation()
     QB.visuals.fade(Recycle.OutsideLocation)
     onDuty = false
     DropPackage()
+    if packageCoords and props[packageCoords] then
+        SetEntityDrawOutline(props[packageCoords], false)
+    end
 end
 
 local function toggleDuty()
