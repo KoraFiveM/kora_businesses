@@ -5,6 +5,7 @@ Config.Mechanic = true
 Config.Taxi = true
 Config.Garbage = true
 Config.Recycle = true
+Config.Tow = true
 Config.enable = {
     {
         name = 'mechanic',
@@ -40,6 +41,15 @@ Config.enable = {
             server = { 'jobs/recycle/server.lua' },
             client = { 'jobs/recycle/client.lua', 'jobs/recycle/sales.lua' },
             shared = { 'jobs/recycle/shared.lua' },
+        },
+    },
+    {
+        name = 'tow',
+        enabled = Config.Tow,
+        filepaths = {
+            server = { 'jobs/tow/server.lua' },
+            client = { 'jobs/tow/client.lua' },
+            shared = { 'jobs/tow/shared.lua' },
         },
     },
 }
