@@ -6,6 +6,9 @@ name 'qbbusinesses'
 author 'qbcore2'
 version '1.0.0'
 
+dependency 'qblib'
+dependency 'qbsql'
+dependency 'qbcore'
 
 shared_scripts {
     '@qblib/init.lua',
