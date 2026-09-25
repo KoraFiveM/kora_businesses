@@ -85,6 +85,4 @@ Mechanic.damage = {
         stallMinSpeed = 2.0,
     },
 }
-
--- Registers this resource-owned configuration with qblib without changing its public Config table.
-if QB and QB.config and QB.config.adopt then Mechanic = QB.config.adopt(Mechanic) end
+Globals.Mechanic = Mechanic

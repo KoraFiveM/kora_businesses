@@ -190,7 +190,6 @@ Taxi = {
         'a_m_m_rurmeth_01',
     },
 }
-
 -- Registers this resource-owned configuration with qblib.
 if QB and QB.config and QB.config.adopt then
     local config = QB.config
@@ -220,3 +219,4 @@ if QB and QB.config and QB.config.adopt then
     })
     Taxi = config.adopt(Taxi)
 end
+Globals.Taxi = Taxi

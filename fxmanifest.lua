@@ -24,5 +24,7 @@ client_scripts {
 }
 
 files {
-    'jobs/**.lua',
+    'locales/**.lua',
+    'jobs/**/**.lua',
+    'init.lua'
 }
