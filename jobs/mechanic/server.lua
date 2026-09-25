@@ -81,7 +81,7 @@ local function makePermit(src, action, netId)
     return id
 end
 
-QB.callback.register('qbmechanic:permit', function(src, action, netId)
+QB.callback.register('qbbusinesses:mechanic:permit', function(src, action, netId)
     local vehicle = getVehicle(src, netId)
     if not vehicle then return false, 'Move closer to a valid vehicle.' end
     local allowed, reason = canPerform(src, action, vehicle)
@@ -89,7 +89,7 @@ QB.callback.register('qbmechanic:permit', function(src, action, netId)
     return true, makePermit(src, action, netId)
 end, { rateLimit = Mechanic.interaction.permitRateLimit })
 
-RegisterNetEvent('qbmechanic:server:completeService', function(permitId, payload)
+RegisterNetEvent('qbbusinesses:server:serviceCompleted', function(permitId, payload)
     local src = source
     local permit = permits[permitId]
     permits[permitId] = nil -- permits are single-use even if validation fails
@@ -108,7 +108,7 @@ RegisterNetEvent('qbmechanic:server:completeService', function(permitId, payload
         local removed, err = exports.qbcore:removeItem(src, cost.item, cost.amount or 1, nil, 'vehicle service')
         if not removed then return notify(src, ('Required item missing: %s.'):format(err or cost.item), 'error') end
     end
-    TriggerClientEvent('qbmechanic:client:applyService', src, permit.action, permit.netId, payload)
+    TriggerClientEvent('qbbusinesses:client:serviceApplied', src, permit.action, permit.netId, payload)
 end)
 
 AddEventHandler('playerDropped', function()

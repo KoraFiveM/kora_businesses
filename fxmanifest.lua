@@ -24,6 +24,5 @@ client_scripts {
 }
 
 files {
-    'sql/001_businesses.sql',
-    'jobs/*/*.lua',
+    'jobs/**.lua',
 }

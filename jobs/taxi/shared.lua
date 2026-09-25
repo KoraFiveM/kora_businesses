@@ -194,29 +194,29 @@ Taxi = {
 -- Registers this resource-owned configuration with qblib.
 if QB and QB.config and QB.config.adopt then
     local config = QB.config
-    Config.jobRequired = config.string(Config.jobRequired, {
+    Taxi.jobRequired = config.string(Taxi.jobRequired, {
         label = 'Required taxi job (unused)', advanced = true,
         description = 'Legacy job identifier. Current taxi interactions do not check this value, so changing it does not restrict access. Restart qbtaxi to apply saved changes.',
     })
-    Config.Management = config.boolean(Config.Management, {
+    Taxi.Management = config.boolean(Taxi.Management, {
         label = 'Pay taxi company (unused)', advanced = true,
         description = 'Legacy company-payment switch. Current trips always pay the driver cash, so changing this does not route fares to company funds. Restart qbtaxi to apply saved changes.',
     })
-    Config.parkLocation = config.vector3(Config.parkLocation, {
+    Taxi.parkLocation = config.vector3(Taxi.parkLocation, {
         label = 'Taxi depot location', advanced = true,
         description = 'World X/Y/Z coordinates in metres for the taxi spawn/return interaction and spawned taxi. Restart qbtaxi to apply saved changes.',
     })
-    Config.PickUp = config.list(Config.PickUp, nil, {
+    Taxi.PickUp = config.list(Taxi.PickUp, nil, {
         label = 'Passenger pickup locations', advanced = true,
         description = 'Random pickup choices for new trips. Each entry has world X/Y/Z coordinates in metres and a heading in degrees. Keep at least one usable location. Restart qbtaxi to apply saved changes.',
     })
-    Config.DropOffs = config.list(Config.DropOffs, nil, {
+    Taxi.DropOffs = config.list(Taxi.DropOffs, nil, {
         label = 'Passenger destinations', advanced = true,
         description = 'Random drop-off choices for new trips. Each entry has world X/Y/Z coordinates in metres and a heading in degrees. Trip distance also determines driver pay. Keep at least one usable location. Restart qbtaxi to apply saved changes.',
     })
-    Config.Peds = config.list(Config.Peds, nil, {
+    Taxi.Peds = config.list(Taxi.Peds, nil, {
         label = 'Passenger models', advanced = true,
         description = 'Ped model names randomly selected for taxi passengers. Keep at least one valid, available model. Restart qbtaxi to apply saved changes.',
     })
-    Config = config.adopt(Config)
+    Taxi = config.adopt(Taxi)
 end
