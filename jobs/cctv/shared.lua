@@ -11,6 +11,14 @@ Cctv = {
         privateBucketBase = 7000,
         duration = 120000,
     },
+    repairChecks = {
+        enabled = true,
+        skill = 'computing',
+        game = 'circuit',
+        baseNodes = 4,
+        nodesPerSecurityLevel = 1,
+        duration = 120000,
+    },
     callouts = {
         enabled = true,
         charge = 500,

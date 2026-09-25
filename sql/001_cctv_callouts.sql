@@ -31,7 +31,13 @@ CREATE TABLE IF NOT EXISTS `qbbusinesses_cctv_systems` (
     `business_label` varchar(100) DEFAULT NULL,
     `camera_count` int NOT NULL DEFAULT 0,
     `status` varchar(20) NOT NULL DEFAULT 'online',
+    `security_level` int NOT NULL DEFAULT 1,
+    `intrusion_level` int NOT NULL DEFAULT 0,
     `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
     PRIMARY KEY (`id`),
     KEY `qbbusinesses_cctv_systems_installer` (`installer_business`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `qbbusinesses_cctv_systems`
+    ADD COLUMN IF NOT EXISTS `security_level` int NOT NULL DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS `intrusion_level` int NOT NULL DEFAULT 0;

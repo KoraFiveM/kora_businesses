@@ -17,9 +17,24 @@ local function hack(targetId)
     })
 end
 
+local function repair(targetId)
+    local started, data = QB.callback.trigger('qbbusinesses:cctv:beginRepairCheck', {
+        targetId = targetId,
+    })
+    if not started then return QB.notify.send({ title = 'CCTV', message = data or 'Could not start repair.', type = 'error' }) end
+    local result = QB.minigames.play(Cctv.repairChecks.game, nil, data.authorization)
+    local success, response = QB.callback.trigger('qbbusinesses:cctv:finishRepairCheck', { proof = result and result.proof })
+    QB.notify.send({ title = 'CCTV', message = success and ('Repair check passed: %s'):format(response.targetId) or (response or 'The repair check failed.'), type = success and 'success' or 'error' })
+end
+
 RegisterCommand('cctvhack', function(_, args)
     if not args[1] then return end
     CreateThread(function() hack(args[1]) end)
+end, false)
+
+RegisterCommand('cctvrepair', function(_, args)
+    if not args[1] then return end
+    CreateThread(function() repair(args[1]) end)
 end, false)
 
 local function openLaptop()

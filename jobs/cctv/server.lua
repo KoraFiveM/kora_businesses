@@ -1,6 +1,7 @@
 local callouts = {}
 local nextCalloutId = 0
 local hackSessions = {}
+local repairSessions = {}
 local RESOURCE = GetCurrentResourceName()
 
 if not QB.shared.get('items', Cctv.laptopItem) then
@@ -106,6 +107,12 @@ end
 
 local function accountKey(account)
     return account.type == 'residential' and account.citizenid or account.business
+end
+
+local function systemSecurity(targetId)
+    local row = QB.sql.single('SELECT `security_level`, `intrusion_level` FROM `qbbusinesses_cctv_systems` WHERE `id` = ?', { targetId })
+    if not row then return 1 end
+    return math.max(1, math.min(10, (tonumber(row.security_level) or 1) + (tonumber(row.intrusion_level) or 0)))
 end
 
 local function validIssue(issue)
@@ -215,8 +222,10 @@ QB.callback.register('qbbusinesses:cctv:beginHack', function(src, data)
         return false, 'Invalid CCTV target.'
     end
     if hackSessions[src] then return false, 'You are already hacking a CCTV system.' end
+    local level = systemSecurity(data.targetId)
     local options = {}
     for key, value in pairs(Cctv.hacking.options) do options[key] = value end
+    options.solutionsize = (options.solutionsize or 4) + math.max(0, level - 1)
     local authorised = QB.minigames.authorizeSkillCheck(src, Cctv.hacking.skill, Cctv.hacking.game, options)
     local previousBucket = GetPlayerRoutingBucket(src)
     local bucket = Cctv.hacking.privateBucketBase + src
@@ -242,6 +251,34 @@ QB.callback.register('qbbusinesses:cctv:finishHack', function(src, data)
     if type(proof) ~= 'string' or not QB.minigames.consumeProof(src, proof, Cctv.hacking.game, session.authorization) then
         return false, 'The CCTV hack failed.'
     end
+    local hacking = QB.skills.get(src, Cctv.hacking.skill)
+    local intrusion = hacking and math.max(1, math.floor((tonumber(hacking.level) or 1) / 10)) or 1
+    QB.sql.update('UPDATE `qbbusinesses_cctv_systems` SET `intrusion_level` = LEAST(10, ?) WHERE `id` = ?', { intrusion, session.targetId })
+    return true, { targetId = session.targetId }
+end)
+
+QB.callback.register('qbbusinesses:cctv:beginRepairCheck', function(src, data)
+    if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
+    if not Cctv.repairChecks.enabled or type(data) ~= 'table' then return false, 'Repair checks are unavailable.' end
+    local level = systemSecurity(data.targetId)
+    if repairSessions[src] then return false, 'You are already repairing a CCTV system.' end
+    local options = {
+        nodeCount = Cctv.repairChecks.baseNodes + (level - 1) * Cctv.repairChecks.nodesPerSecurityLevel,
+        timeLimit = 30000,
+    }
+    local authorization = QB.minigames.authorizeSkillCheck(src, Cctv.repairChecks.skill, Cctv.repairChecks.game, options)
+    repairSessions[src] = { authorization = authorization, targetId = data.targetId, expires = GetGameTimer() + Cctv.repairChecks.duration }
+    return true, { authorization = authorization }
+end)
+
+QB.callback.register('qbbusinesses:cctv:finishRepairCheck', function(src, data)
+    local session = repairSessions[src]
+    repairSessions[src] = nil
+    if not session or session.expires < GetGameTimer() then return false, 'That repair check expired.' end
+    local proof = type(data) == 'table' and data.proof or nil
+    if type(proof) ~= 'string' or not QB.minigames.consumeProof(src, proof, Cctv.repairChecks.game, session.authorization) then
+        return false, 'The repair check failed.'
+    end
     return true, { targetId = session.targetId }
 end)
 
@@ -250,6 +287,7 @@ AddEventHandler('playerDropped', function()
     local session = hackSessions[src]
     hackSessions[src] = nil
     if session then SetPlayerRoutingBucket(src, session.previousBucket) end
+    repairSessions[src] = nil
 end)
 
 CreateThread(function()
@@ -262,6 +300,9 @@ CreateThread(function()
                 hackSessions[src] = nil
                 notify(src, 'Your CCTV hacking session expired.', 'error')
             end
+        end
+        for src, session in pairs(repairSessions) do
+            if session.expires < now then repairSessions[src] = nil end
         end
     end
 end)
