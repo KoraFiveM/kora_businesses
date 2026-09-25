@@ -61,10 +61,7 @@ local function attachBag()
 
     local ped = PlayerPedId()
 
-    RequestModel(BAG_MODEL)
-    while not HasModelLoaded(BAG_MODEL) do
-        Wait(0)
-    end
+    if not QB.stream.loadModel(BAG_MODEL) then return false end
 
     local coords = GetEntityCoords(ped)
     garbage.bagObject = CreateObject(BAG_MODEL, coords.x, coords.y, coords.z, true, true, false)
