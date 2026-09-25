@@ -29,5 +29,6 @@ files {
     'locales/**.lua',
     'jobs/**/**.lua',
     'sql/**.sql',
+    'docs/**.md',
     'init.lua'
 }
