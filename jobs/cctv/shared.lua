@@ -3,6 +3,14 @@ Cctv = {
     laptopItem = 'cctv_laptop',
     requireOnDuty = true,
     minimumEngineerGrade = 0,
+    hacking = {
+        enabled = true,
+        skill = 'crafting',
+        game = 'hacking',
+        options = { solutionsize = 4, timeLimit = 30000 },
+        privateBucketBase = 7000,
+        duration = 120000,
+    },
     callouts = {
         enabled = true,
         charge = 500,

@@ -3,6 +3,25 @@
 local APP_ID = 'qbbusinesses:cctv-laptop'
 local active = false
 
+local function hack(targetId)
+    local started, data = QB.callback.trigger('qbbusinesses:cctv:beginHack', { targetId = targetId })
+    if not started then
+        return QB.notify.send({ title = 'CCTV', message = data or 'Could not start the hack.', type = 'error' })
+    end
+    local result = QB.minigames.play(Cctv.hacking.game, nil, data.authorization)
+    local success, response = QB.callback.trigger('qbbusinesses:cctv:finishHack', { proof = result and result.proof })
+    QB.notify.send({
+        title = 'CCTV',
+        message = success and ('Access granted: %s'):format(response.targetId) or (response or 'The hack failed.'),
+        type = success and 'success' or 'error',
+    })
+end
+
+RegisterCommand('cctvhack', function(_, args)
+    if not args[1] then return end
+    CreateThread(function() hack(args[1]) end)
+end, false)
+
 local function openLaptop()
     if active then return end
     active = true

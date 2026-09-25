@@ -11,6 +11,7 @@ dependency 'qbsql'
 dependency 'qbcore'
 dependency 'qbinventory'
 dependency 'qbbanking'
+dependency 'qbskills'
 
 shared_scripts {
     '@qblib/init.lua',

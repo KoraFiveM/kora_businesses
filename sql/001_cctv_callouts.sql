@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS `qbbusinesses_cctv_callouts` (
     `id` varchar(40) NOT NULL,
-    `business` varchar(50) NOT NULL,
+    `business` varchar(50) DEFAULT NULL,
+    `customer_type` varchar(20) NOT NULL DEFAULT 'business',
+    `citizenid` varchar(50) DEFAULT NULL,
     `issue` enum('camera','nvr') NOT NULL,
     `camera_id` varchar(80) DEFAULT NULL,
     `nvr_id` varchar(80) DEFAULT NULL,
@@ -16,6 +18,11 @@ CREATE TABLE IF NOT EXISTS `qbbusinesses_cctv_callouts` (
     KEY `qbbusinesses_cctv_callouts_business` (`business`),
     KEY `qbbusinesses_cctv_callouts_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `qbbusinesses_cctv_callouts`
+    MODIFY COLUMN `business` varchar(50) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS `customer_type` varchar(20) NOT NULL DEFAULT 'business',
+    ADD COLUMN IF NOT EXISTS `citizenid` varchar(50) DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS `qbbusinesses_cctv_systems` (
     `id` varchar(80) NOT NULL,

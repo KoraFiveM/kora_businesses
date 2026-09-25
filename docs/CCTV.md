@@ -40,6 +40,28 @@ Cctv = {
 - `repair.cameraPrice`: charge for a camera repair.
 - `repair.nvrPrice`: charge for an NVR repair.
 
+## Residential customers
+
+CCTV supports homeowners as well as businesses. Residential requests use
+`customerType = 'residential'` and the requester's `citizenid`; charges come
+from that player's bank account. Business requests use
+`customerType = 'business'` and a configured business/job name.
+
+## Hacking
+
+Hacking uses `qbskills` to adjust qblib's `hacking` minigame difficulty. The
+server creates the authorization and consumes the proof, so clients cannot
+choose an easier puzzle or report a fake success.
+
+When a hack starts, the player is moved into a private routing bucket. The
+original bucket is restored on success, failure, timeout, or disconnect.
+
+The current test entry point is:
+
+```text
+/cctvhack <camera-or-nvr-id>
+```
+
 ## Engineer laptop
 
 The `cctv_laptop` item is registered automatically by `qbbusinesses`.
