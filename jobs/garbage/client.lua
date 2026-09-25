@@ -406,7 +406,7 @@ CreateThread(function()
     setUpPed()
 
     local playerData = exports.qbcore:getPlayerData()
-    if playerData.job.name == 'garbage' then
+    if playerData and playerData.job and playerData.job.name == 'garbage' then
         createDepotBlip()
     end
 end)
