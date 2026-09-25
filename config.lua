@@ -6,6 +6,7 @@ Config.Taxi = true
 Config.Garbage = true
 Config.Recycle = true
 Config.Tow = true
+Config.Cctv = true
 Config.enable = {
     {
         name = 'mechanic',
@@ -50,6 +51,15 @@ Config.enable = {
             server = { 'jobs/tow/server.lua' },
             client = { 'jobs/tow/client.lua' },
             shared = { 'jobs/tow/shared.lua' },
+        },
+    },
+    {
+        name = 'cctv',
+        enabled = Config.Cctv,
+        filepaths = {
+            server = { 'jobs/cctv/server.lua' },
+            client = { 'jobs/cctv/client.lua' },
+            shared = { 'jobs/cctv/shared.lua' },
         },
     },
 }

@@ -9,6 +9,8 @@ version '1.0.0'
 dependency 'qblib'
 dependency 'qbsql'
 dependency 'qbcore'
+dependency 'qbinventory'
+dependency 'qbbanking'
 
 shared_scripts {
     '@qblib/init.lua',
@@ -26,5 +28,6 @@ client_scripts {
 files {
     'locales/**.lua',
     'jobs/**/**.lua',
+    'sql/**.sql',
     'init.lua'
 }
