@@ -2,7 +2,7 @@ local currentTaxis = {}
 
 local function taxiPlayer(source)
     local player = exports.qbcore:getPlayer(source)
-    if not player or not player.PlayerData.job or player.PlayerData.job.name ~= Taxi.jobRequired then
+    if not player or not player.job or player.job.name ~= Taxi.jobRequired then
         return nil
     end
     return player

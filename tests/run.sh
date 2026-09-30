@@ -5,3 +5,4 @@ lua tests/cctv.lua
 lua tests/garbage.lua
 lua tests/recycle.lua
 lua tests/hotdog.lua
+lua tests/taxi-authorization.lua
