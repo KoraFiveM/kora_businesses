@@ -7,3 +7,4 @@ lua tests/recycle.lua
 lua tests/hotdog.lua
 lua tests/taxi-authorization.lua
 lua tests/taxi.lua
+lua tests/tow.lua

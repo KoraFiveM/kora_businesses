@@ -50,7 +50,7 @@ local function setUpPickup(data)
                     if not confirm then
                         return
                     end
-                    AttachEntityToEntity(pickupVeh, veh, GetEntityBoneIndexByName(vehicle, 'bodyshell'), 0.0, -1.5 + -0.85, 0.0 + 1.15, 0, 0, 0, 1, 1, 0, 1, 0, 1)
+                    AttachEntityToEntity(pickupVeh, veh, GetEntityBoneIndexByName(veh, 'bodyshell'), 0.0, -1.5 + -0.85, 0.0 + 1.15, 0, 0, 0, 1, 1, 0, 1, 0, 1)
                     towAttached = true
                     QB.notify.send({
                         title = 'Tow Job',
