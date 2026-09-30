@@ -27,6 +27,7 @@ local function progressbar(label, time)
 end
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
+    TriggerServerEvent('qb-recyclejob:server:cancelPickup')
     if packageCoords and props[packageCoords] then
         SetEntityDrawOutline(props[packageCoords], false)
     end
@@ -102,6 +103,7 @@ end
 local function ExitLocation()
     QB.visuals.fade(Recycle.OutsideLocation)
     onDuty = false
+    TriggerServerEvent('qb-recyclejob:server:cancelPickup')
     DropPackage()
     if packageCoords and props[packageCoords] then
         SetEntityDrawOutline(props[packageCoords], false)
@@ -112,6 +114,8 @@ local function toggleDuty()
     if onDuty then
         QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.text.clock_out'), type = 'success' })
         onDuty = false
+        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+        DropPackage()
         if packageCoords and props[packageCoords] then
             SetEntityDrawOutline(props[packageCoords], false)
         end
@@ -124,11 +128,19 @@ local function toggleDuty()
 end
 
 local function pickUp()
-    if isBusy then return end
+    if isBusy or not onDuty or not packageCoords then return end
     isBusy = true
+    if not QB.callback.trigger('qb-recyclejob:server:pickupPackage', packageCoords) then
+        isBusy = false
+        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+        return
+    end
     local success = progressbar(QB.lang('recycle.text.picking_up_the_package'), Recycle.PickupActionDuration)
     isBusy = false
-    if not success then return end
+    if not success then
+        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+        return
+    end
     if props[packageCoords] then
         SetEntityDrawOutline(props[packageCoords], false)
     end

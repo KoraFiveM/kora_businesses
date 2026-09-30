@@ -16,6 +16,7 @@ local maxSell = 500 -- sanity clamp on a single sell request
 local coolDown = Recycle.DeliveryActionDuration or 3000 -- can't claim faster than the hand-in animation takes
 local Sales, Stock = {}, {}
 local lastCollection = {}
+local pendingPackages = {}
 
 if Recycle.SellMaterials then
     Sales = {
@@ -91,13 +92,30 @@ local function sellMaterials(src, item, amount)
     end
 end
 
+QB.callback.register('qb-recyclejob:server:pickupPackage', function(src, index)
+    if type(index) ~= 'number' or index % 1 ~= 0 then return false end
+    local pickup = Recycle.PickupLocations[index]
+    if not pickup or pendingPackages[src] then return false end
+    if not QB.distance.player(src, pickup.loc, 3.0) then return false end
+    pendingPackages[src] = GetGameTimer()
+    return true
+end)
+
+RegisterNetEvent('qb-recyclejob:server:cancelPickup', function()
+    pendingPackages[source] = nil
+end)
+
 RegisterNetEvent('qb-recyclejob:server:getItem', function()
     local src = source
     local now = GetGameTimer()
+    local pickedUpAt = pendingPackages[src]
+    if not pickedUpAt or now - pickedUpAt < coolDown then return end
     if lastCollection[src] and (now - lastCollection[src]) < coolDown then
         return
     end
     if not QB.distance.player(src, Recycle.DropLocation, 5.0) then return end
+    -- Consume before inventory operations yield so one pickup cannot be redeemed twice.
+    pendingPackages[src] = nil
     lastCollection[src] = now
 
     local itemAmountRecieved = math.random(1, maxRecieved)
@@ -125,4 +143,10 @@ end)
 
 AddEventHandler('playerDropped', function()
     lastCollection[source] = nil
+    pendingPackages[source] = nil
+end)
+
+AddEventHandler('QBCore:Server:OnPlayerUnload', function(src)
+    lastCollection[src] = nil
+    pendingPackages[src] = nil
 end)
