@@ -50,10 +50,10 @@ end
 
 local function playerJob(src)
     local job = exports.qbcore:getJob(src)
-    if not job then return nil end
-    if job.name == Cctv.job and Cctv.requireOnDuty and not job.onduty then return nil end
+    if not job or job.name ~= Cctv.job then return nil end
+    if Cctv.requireOnDuty and not job.onduty then return nil end
     local grade = job.grade and (job.grade.level or job.grade)
-    if job.name == Cctv.job and tonumber(grade) < Cctv.minimumEngineerGrade then return nil end
+    if tonumber(grade) < Cctv.minimumEngineerGrade then return nil end
     return job
 end
 
