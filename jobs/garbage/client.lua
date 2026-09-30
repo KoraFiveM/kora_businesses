@@ -295,6 +295,20 @@ local function spawnTruck()
     SetEntityAsMissionEntity(garbage.truck, true, true)
     SetModelAsNoLongerNeeded(model)
 
+    if not QB.callback.trigger('qb-garbagejob:setTruck', VehToNet(garbage.truck)) then
+        QB.callback.trigger('qb-garbagejob:cancel')
+        if DoesEntityExist(garbage.truck) then
+            DeleteVehicle(garbage.truck)
+        end
+        garbage.truck = nil
+        QB.notify.send({
+            title = 'Garbage',
+            message = 'Unable to start the route. Please try again.',
+            type = 'error',
+        })
+        return
+    end
+
     TriggerEvent('qb-vehiclekeys:client:AddKeys', 'GARBAGE')
 
     garbage.route = route

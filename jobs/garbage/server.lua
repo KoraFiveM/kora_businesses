@@ -97,7 +97,8 @@ QB.callback.register('qb-garbagejob:setTruck', function(source, vehicleNet)
         return false
     end
 
-    if not isNearEntity(source, vehicle, 15.0) then
+    -- The depot NPC is up to 23 metres from the configured truck spawns.
+    if not isNearEntity(source, vehicle, 30.0) then
         return false
     end
 
