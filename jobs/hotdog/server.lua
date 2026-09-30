@@ -46,7 +46,11 @@ QB.callback.register('qb-hotdogjob:startWorking', function(src)
     assert(p and cid, 'Player not found.')
     assert(isHotdog(src), 'You are not a hotdog vendor.')
     if Working[cid] then return fail('You are already working.') end
-    p.RemoveMoney('bank', Hotdog.StandDeposit, 'hot dog deposit')
+    local deposit = tonumber(Hotdog.StandDeposit) or 0
+    if deposit > 0 then
+        local paid, err = p.RemoveMoney('bank', Hotdog.StandDeposit, 'hot dog deposit')
+        if not paid then return fail(err or QB.lang('hotdog.error.no_money')) end
+    end
     Working[cid] = true
     Stock[cid] = { common = 0, rare = 0, exotic = 0 }
     return true
