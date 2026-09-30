@@ -19,6 +19,7 @@ QB.callback.register('qb-taxi:getPickupLocation', function(source)
     currentTaxis[source].pickup = pickup
     currentTaxis[source].dropoff = dropoff
     currentTaxis[source].distance = QB.util.vecDistance(pickup, dropoff)
+    currentTaxis[source].pickupComplete = false
     return {pickup = pickup, dropoff = dropoff}
 end)
 
