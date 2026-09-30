@@ -20,13 +20,21 @@ end
 
 local function setup(spawnIndex, rejectRegistration)
     local callbacks, entities, calls = {}, {}, {}
-    local state = { zones = 0, truckTargets = 0, keys = 0, deleted = 0, errors = 0 }
+    local state = { zones = 0, truckTargets = 0, keys = 0, deleted = 0, errors = 0,
+        activeZones = {}, removedZones = {}, events = {} }
     local function record(name) calls[#calls + 1] = name end
     local env = setmetatable({
         Globals = {}, vector3 = vector, vector4 = vector, joaat = function(value) return value end,
         GetCurrentResourceName = function() return 'qbbusinesses' end,
-        AddEventHandler = noop, CreateThread = noop,
+        AddEventHandler = function(name, fn)
+            state.events[name] = state.events[name] or {}
+            table.insert(state.events[name], fn)
+        end,
+        CreateThread = noop,
         GetPlayerPed = function() return 1 end,
+        PlayerPedId = function() return 1 end,
+        ClearPedSecondaryTask = noop, TaskPlayAnim = noop, AttachEntityToEntity = noop,
+        GetPedBoneIndex = function(_, bone) return bone end,
         NetworkGetEntityFromNetworkId = function(net)
             return entities[net - 1000] and net - 1000 or 0
         end,
@@ -74,15 +82,29 @@ local function setup(spawnIndex, rejectRegistration)
                 state.start = options[1]
             else
                 state.truckTargets = state.truckTargets + 1
+                state.truckOptions = options
                 record('truckTarget')
             end
         end,
-        addBoxZone = function()
+        addBoxZone = function(_, options)
             state.zones = state.zones + 1
+            state.lastZone = 1000 + state.zones
+            state.activeZones[state.lastZone] = options
             record('stopZone')
+            return state.lastZone
         end,
-        removeZone = noop,
+        removeZone = function(_, id)
+            if not state.activeZones[id] then return false end
+            state.activeZones[id] = nil
+            table.insert(state.removedZones, id)
+            return true
+        end,
     }
+    env.CreateObject = function(model, x, y, z)
+        state.object = (state.object or 99) + 1
+        entities[state.object] = { model = model, coords = vector(x, y, z) }
+        return state.object
+    end
     env.CreateVehicle = function(model, x, y, z)
         state.truck = (state.truck or 9) + 1
         entities[state.truck] = { model = model, coords = vector(x, y, z) }
@@ -150,4 +172,54 @@ assert(register(1, 1010) == false, 'reject distant trucks')
 entities[10].coords = env.Garbage.Locations.vehicle[1].coords
 assert(register(1, 1010) == true)
 assert(register(1, 1010) == false, 'a route truck is registered once')
-print('qbbusinesses garbage: truck registration, default spawn range, bag deposit and failure cleanup passed')
+
+local function emit(state, name, ...)
+    for _, handler in ipairs(state.events[name] or {}) do handler(...) end
+end
+
+env, callbacks, entities, calls, state = setup(1, false)
+env.Garbage.MinStops, env.Garbage.MaxStops = 2, 2
+env.Garbage.MinBagsPerStop, env.Garbage.MaxBagsPerStop = 1, 1
+state.start.onSelect()
+for index, stop in ipairs(state.route) do
+    local zoneId = state.lastZone
+    local zone = assert(state.activeZones[zoneId])
+    assert(type(zoneId) == 'number' and zone.options[1].canInteract())
+    entities[1].coords = env.Garbage.Locations.trashcan[stop.stop].coords
+    zone.options[1].onSelect()
+    entities[1].coords = entities[state.truck].coords
+    state.truckOptions[1].onSelect()
+    assert(state.activeZones[zoneId] == nil, 'completing a stop removes its returned target ID')
+    assert(state.removedZones[#state.removedZones] == zoneId)
+    if index < #state.route then
+        assert(next(state.activeZones) == state.lastZone and next(state.activeZones, state.lastZone) == nil,
+            'advancing leaves only the current stop target')
+    else
+        assert(next(state.activeZones) == nil, 'finishing the route removes the final stop target')
+    end
+end
+
+env, callbacks, entities, calls, state = setup(1, false)
+for _ = 1, 2 do
+    entities[1].coords = env.Garbage.Peds[1].coords
+    state.start.onSelect()
+    local zoneId = state.lastZone
+    assert(state.activeZones[zoneId])
+    emit(state, 'QBCore:Client:OnJobUpdate', { name = 'unemployed' })
+    assert(next(state.activeZones) == nil, 'job cancellation removes the current stop target')
+    assert(state.removedZones[#state.removedZones] == zoneId)
+    local removed = #state.removedZones
+    emit(state, 'QBCore:Client:OnJobUpdate', { name = 'unemployed' })
+    assert(#state.removedZones == removed, 'repeated cleanup does not remove a target twice')
+end
+state.start.onSelect()
+local zoneId = state.lastZone
+state.activeZones[99] = { unrelated = true }
+emit(state, 'onResourceStop', 'another-resource')
+assert(state.activeZones[zoneId], 'another resource stopping does not remove the active stop')
+-- An externally deleted truck still needs its stop zone cleaned up.
+entities[state.truck] = nil
+emit(state, 'onResourceStop', 'qbbusinesses')
+assert(state.activeZones[zoneId] == nil, 'resource stop removes the active stop target')
+assert(state.activeZones[99] and #state.removedZones == 3, 'cleanup preserves unrelated zones')
+print('qbbusinesses garbage: truck registration, bag deposits, failure cleanup and stop zone lifecycle passed')

@@ -101,9 +101,7 @@ local function setupStop(stopId, bagsRequired)
     createStopBlip(stopId)
 
     local stop = Garbage.Locations.trashcan[stopId]
-    local zoneName = ('qb-garbagejob-stop-%s'):format(stopId)
-    garbage.stopZone = zoneName
-    exports.qbtarget:addBoxZone({
+    garbage.stopZone = exports.qbtarget:addBoxZone({
         coords = vector3(stop.coords.x, stop.coords.y, stop.coords.z),
         size = vector3(1.5, 1.5, 1.5),
         rotation = stop.coords.w or 180.0,
