@@ -129,7 +129,8 @@ env.exports['qb-core'].GetCoreObject = function()
     return { Functions = { GetPlayerData = function() return clientData end } }
 end
 env.RegisterNetEvent = function(name, fn) clientEvents[name] = fn end
-env.CreateThread = function() end
+local clientThreads = {}
+env.CreateThread = function(fn) clientThreads[#clientThreads + 1] = fn end
 env.QB.nui = { registerApp = function() end }
 env.QB.keybind = { add = function() end }
 env.QB.blips = { create = function() return 1 end, remove = function() end }
@@ -167,5 +168,73 @@ clientData.skills = nil
 clientEvents['QBCore:Client:OnPlayerLoaded']()
 local price = config.Stock.common.Price[1]
 equal(offerRange('common', 1), ('%d-%d'):format(price.min, price.max), 'missing skills preserve the level-one fallback')
+
+-- Locale values must reach the real formatter, not a key-only fixture.
+local libraryRoot = os.getenv('QB_LIB_ROOT') or root .. '../qblib'
+env.QB.locale = {}
+env.GetInvokingResource = function() return 'qbbusinesses' end
+env.GetCurrentResourceName = function() return 'qbbusinesses' end
+env.LoadResourceFile = function(resource, path)
+    if resource ~= 'qbbusinesses' then return nil end
+    local file = io.open(root .. path, 'rb')
+    if not file then return nil end
+    local value = file:read('*a'); file:close()
+    return value
+end
+assert(loadfile(libraryRoot .. '/modules/locales/shared.lua', 't', env))()
+local addCustomerTarget = upvalue(sellToPed, 'addCustomerTarget')
+local completeSale = upvalue(upvalue(addCustomerTarget, 'acceptOffer'), 'completeSale')
+local lastTarget, lastNotice, workOptions
+local saleCalls = {}
+env.QB.interact = {
+    addEntity = function(ped, options) lastTarget = { ped = ped, options = options }; return 17 end,
+    removeEntity = function() end,
+    addBoxZone = function(_, _, _, options) workOptions = options end,
+}
+env.QB.notify = { send = function(data) lastNotice = data end }
+env.QB.nui.updateApp = function() end
+env.QB.nui.isAppOpen = function() return false end
+env.QB.cache = { ped = function() return 10 end }
+env.QB.anim = { play = function() end, clear = function() end }
+env.QB.entities = { delete = function() end }
+env.DoesEntityExist = function(entity) return entity == 101 end
+env.NetworkGetNetworkIdFromEntity = function(ped) return ped + 1000 end
+env.QB.callback.trigger = function(name, ...)
+    if name ~= 'qb-hotdogjob:sell' then return true end
+    saleCalls[#saleCalls + 1] = { ... }
+    return { amount = 3, total = 27 }
+end
+for _, case in ipairs({ { amount = 1, range = '4-6' }, { amount = 3, range = '21-27' } }) do
+    addCustomerTarget(201, 'common', case.amount, case.range)
+    equal(lastTarget.ped, 201, 'offer target retains its customer')
+    equal(lastTarget.options[1].label, ('Sell %d x HotDogs for $%s'):format(case.amount, case.range),
+        'offer text interpolates the configured amount and price range')
+    equal(type(lastTarget.options[1].action), 'function', 'accept callback remains available')
+    equal(lastTarget.options[2].label, 'Decline offer', 'decline option remains unchanged')
+end
+upvalue(completeSale, 'stock').common = 3
+completeSale(201, 'common', 3)
+equal(lastNotice.message, "3 x Hotdog('s) sold for $27", 'sale result formats the configured values')
+equal(lastNotice.type, 'success', 'sale notification type remains unchanged')
+equal(saleCalls[1][1], 1201, 'sale passes the same network customer')
+equal(saleCalls[1][2], 'common', 'sale passes the same quality')
+equal(saleCalls[1][3], 3, 'sale passes the same amount')
+equal(upvalue(completeSale, 'stock').common, 0, 'successful sale retains stock consumption')
+-- Run only the captured startup registration and explicit work actions, never its watch loop.
+config.StandDeposit = 250
+env.vector3 = function(x, y, z) return { x = x, y = y, z = z } end
+env.QB.stream = { loadModel = function(_, callback) callback(1); return true end }
+env.CreateObject = function() return 101 end
+env.PlaceObjectOnGroundProperly = function() end
+env.SetEntityHeading = function() end
+env.FreezeEntityPosition = function() end
+clientThreads[1]()
+workOptions[1].action(); clientThreads[#clientThreads]()
+equal(lastNotice.message, 'You paid a $250 deposit!', 'paid start formats the existing deposit')
+workOptions[2].action(); clientThreads[#clientThreads]()
+equal(lastNotice.message, 'Your $250 deposit has been returned!', 'stand return formats the existing deposit')
+equal(lastNotice.type, 'success', 'return notification type remains unchanged')
+equal(env.QB.lang('hotdog.' .. 'success.made_luck_hotdog', 2, 'Rare (B)'), 'You made 2 x Rare (B) Hot Dogs',
+    'unrelated positional hotdog phrases retain their contract')
 
 print('qbbusinesses hotdog: ' .. checks .. ' deposit and offer-price checks passed')

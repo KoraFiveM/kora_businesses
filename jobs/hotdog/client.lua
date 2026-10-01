@@ -238,7 +238,7 @@ local function completeSale(ped, quality, amount)
         return
     end
 
-    notify(QB.lang('hotdog.success.sold_hotdogs', { value = result.amount, value2 = result.total }), 'success')
+    notify(QB.lang('hotdog.success.sold_hotdogs', result.amount, result.total), 'success')
     handOverHotdog()
     releaseCustomer(ped, false)
 end
@@ -272,7 +272,7 @@ local function addCustomerTarget(ped, quality, amount, range)
     selling.targetId = QB.interact.addEntity(ped, {
         {
             icon = 'fas fa-hand-holding-dollar',
-            label = QB.lang('hotdog.info.sell_dogs_target', { value = amount, value2 = range }),
+            label = QB.lang('hotdog.info.sell_dogs_target', amount, range),
             action = function()
                 CreateThread(function() acceptOffer(ped, quality, amount) end)
             end,
@@ -629,7 +629,7 @@ local function stopWorking()
     local stopped, reason = QB.callback.trigger('qb-hotdogjob:stopWorking')
     if stopped then
         teardownStand()
-        notify(QB.lang('hotdog.success.deposit_returned', { deposit = Hotdog.StandDeposit }), 'success')
+        notify(QB.lang('hotdog.success.deposit_returned', Hotdog.StandDeposit), 'success')
     elseif reason then
         teardownStand()
         notify(reason, 'error')
