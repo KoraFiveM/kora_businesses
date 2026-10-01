@@ -4,6 +4,11 @@ local hackSessions = {}
 local repairSessions = {}
 local RESOURCE = GetCurrentResourceName()
 
+local function setBucket(src, bucket)
+    SetPlayerRoutingBucket(src, bucket)
+    TriggerEvent('qbvoice:server:bucketChanged', src)
+end
+
 if not QB.shared.get('items', Cctv.laptopItem) then
     local registered, err = QB.shared.register('items', Cctv.laptopItem, {
         label = 'CCTV Engineer Laptop',
@@ -229,7 +234,7 @@ QB.callback.register('qbbusinesses:cctv:beginHack', function(src, data)
     local authorised = QB.minigames.authorizeSkillCheck(src, Cctv.hacking.skill, Cctv.hacking.game, options)
     local previousBucket = GetPlayerRoutingBucket(src)
     local bucket = Cctv.hacking.privateBucketBase + src
-    SetPlayerRoutingBucket(src, bucket)
+    setBucket(src, bucket)
     hackSessions[src] = {
         authorization = authorised,
         targetId = data.targetId,
@@ -243,10 +248,10 @@ QB.callback.register('qbbusinesses:cctv:finishHack', function(src, data)
     local session = hackSessions[src]
     hackSessions[src] = nil
     if not session or session.expires < GetGameTimer() then
-        if session then SetPlayerRoutingBucket(src, session.previousBucket) end
+        if session then setBucket(src, session.previousBucket) end
         return false, 'That hacking session expired.'
     end
-    SetPlayerRoutingBucket(src, session.previousBucket)
+    setBucket(src, session.previousBucket)
     local proof = type(data) == 'table' and data.proof or nil
     if type(proof) ~= 'string' or not QB.minigames.consumeProof(src, proof, Cctv.hacking.game, session.authorization) then
         return false, 'The CCTV hack failed.'
@@ -286,7 +291,7 @@ AddEventHandler('playerDropped', function()
     local src = source
     local session = hackSessions[src]
     hackSessions[src] = nil
-    if session then SetPlayerRoutingBucket(src, session.previousBucket) end
+    if session then setBucket(src, session.previousBucket) end
     repairSessions[src] = nil
 end)
 
@@ -296,7 +301,7 @@ CreateThread(function()
         local now = GetGameTimer()
         for src, session in pairs(hackSessions) do
             if session.expires < now then
-                SetPlayerRoutingBucket(src, session.previousBucket)
+                setBucket(src, session.previousBucket)
                 hackSessions[src] = nil
                 notify(src, 'Your CCTV hacking session expired.', 'error')
             end

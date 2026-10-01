@@ -2,6 +2,7 @@ local root = debug.getinfo(1, 'S').source:sub(2):match('(.*/)') .. '../'
 local callbacks, api = {}, {}
 local job, reads, charges = nil, 0, 0
 local function noop() end
+local handlers, threads, buckets, notices, clock = {}, {}, { [1] = 42 }, {}, 0
 local env = setmetatable({
     Globals = {},
     QB = {
@@ -18,7 +19,15 @@ local env = setmetatable({
         },
     }, { __call = function(_, name, fn) api[name] = fn end }),
     GetCurrentResourceName = function() return 'qbbusinesses' end,
-    AddEventHandler = noop, CreateThread = noop,
+    AddEventHandler = function(name, fn) handlers[name] = fn end,
+    CreateThread = function(fn) threads[#threads + 1] = coroutine.create(fn) end,
+    Wait = function() coroutine.yield() end,
+    GetGameTimer = function() return clock end,
+    GetPlayerRoutingBucket = function(src) return buckets[src] end,
+    SetPlayerRoutingBucket = function(src, bucket) buckets[src] = bucket end,
+    TriggerEvent = function(name, src)
+        if name == 'qbvoice:server:bucketChanged' then notices[#notices + 1] = { src = src, bucket = buckets[src] } end
+    end,
 }, { __index = _G })
 assert(loadfile(root .. 'jobs/cctv/shared.lua', 't', env))()
 env.Cctv.minimumEngineerGrade = 2
@@ -46,4 +55,37 @@ env.Cctv.requireOnDuty = false
 job = { name = 'cctv', onduty = false, grade = { level = 2 } }
 assert(callbacks['qbbusinesses:cctv:completeCallout'](1, 'test') == true)
 assert(callout.status == 'completed' and charges == 1)
-print('qbbusinesses CCTV: engineer authorization and billing regression passed')
+env.QB.sql.single = function() return nil end
+env.QB.sql.update = function() return true end
+env.QB.minigames = { authorizeSkillCheck = function() return 'authorization' end, consumeProof = function() return true end }
+env.QB.skills = { get = function() return { level = 10 } end }
+env.QB.notify = { send = noop }
+local function noticed(bucket)
+    assert(#notices == 1 and notices[1].src == 1 and notices[1].bucket == bucket, 'exact notice must follow the raw bucket native')
+    assert(buckets[1] == bucket)
+    notices = {}
+end
+local function beginHack()
+    assert(callbacks['qbbusinesses:cctv:beginHack'](1, { targetId = 'system' }) == true)
+    noticed(env.Cctv.hacking.privateBucketBase + 1)
+end
+beginHack()
+assert(callbacks['qbbusinesses:cctv:finishHack'](1, { proof = 'proof' }) == true)
+noticed(42)
+beginHack()
+clock = clock + env.Cctv.hacking.duration + 1
+assert(callbacks['qbbusinesses:cctv:finishHack'](1, {}) == false)
+noticed(42)
+beginHack()
+clock = clock + env.Cctv.hacking.duration + 1
+assert(coroutine.resume(threads[2]))
+assert(coroutine.resume(threads[2]))
+noticed(42)
+beginHack()
+env.source = 1
+handlers.playerDropped()
+noticed(42)
+env.SetPlayerRoutingBucket = function() error('controlled native failure') end
+assert(not pcall(callbacks['qbbusinesses:cctv:beginHack'], 1, { targetId = 'system' }))
+assert(#notices == 0, 'failed native does not notify')
+print('qbbusinesses CCTV: engineer authorization, billing and bucket notices passed')
