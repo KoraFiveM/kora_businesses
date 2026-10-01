@@ -91,4 +91,97 @@ fire('qb-taxi:pickup', 2)
 fire('playerDropped', 2)
 positions[2] = fresh.dropoff
 reject('qb-taxi:dropOff', 2, 'No current taxi found for this source')
-print('taxi server: replacement requires a new pickup; fare, isolation and lifecycle checks passed')
+
+do
+    local clientEvents, zones, pending, threads, created, removed, alive, left = {}, {}, {}, {}, {}, {}, {}, {}
+    local actions, nextEntity = nil, 100
+    local client = {}
+    for name, value in pairs(env) do client[name] = value end
+    client.RegisterNetEvent = function(name, fn) clientEvents[name] = fn end
+    client.TriggerServerEvent = function(name, ...)
+        assert(select('#', ...) == 0, 'taxi completion event arguments must remain unchanged')
+        pending[#pending + 1] = name
+    end
+    client.CreateThread = function(fn) threads[#threads + 1] = coroutine.create(fn) end
+    client.Wait = coroutine.yield
+    client.PlayerPedId = function() return 1 end
+    client.GetVehicleMaxNumberOfPassengers = function() return 2 end
+    client.IsVehicleSeatFree = function() return true end
+    client.TaskLeaveVehicle = function(ped, vehicle, flag) left[#left + 1] = { ped, vehicle, flag } end
+    for _, name in ipairs({ 'SetNewWaypoint', 'TaskStartScenarioInPlace', 'SetEntityAsMissionEntity',
+        'FreezeEntityPosition', 'ClearPedTasksImmediately', 'TaskEnterVehicle', 'TaskWarpPedIntoVehicle',
+        'SetVehicleNumberPlateText' }) do client[name] = function() end end
+    client.QB = {
+        callback = { trigger = function(name) return callbacks[name](1) end },
+        notify = { send = function() end },
+        interact = { addBoxZone = function(_, _, _, options) actions = options end },
+        zones = { box = function(zone)
+            zone.remove = function() zone.removed = true end
+            zones[#zones + 1] = zone
+            return zone
+        end },
+        entities = {
+            create = function(model, coords, options)
+                nextEntity = nextEntity + 1
+                created[#created + 1] = { entity = nextEntity, model = model, coords = coords, options = options }
+                alive[nextEntity] = true
+                return nextEntity
+            end,
+            remove = function(entity)
+                assert(type(entity) == 'number', 'cleanup must retain its departing passenger handle')
+                removed[#removed + 1] = entity
+                alive[entity] = nil
+                return true
+            end,
+        },
+    }
+    local originalSpawn = env.TriggerClientEvent
+    env.TriggerClientEvent = function(name, src)
+        originalSpawn(name, src)
+        client.source = 65535
+        clientEvents[name]()
+    end
+    local function deliver()
+        local queued = pending
+        pending = {}
+        for _, name in ipairs(queued) do fire(name, 1) end
+    end
+    local function cleanup(thread)
+        local ok, delay = coroutine.resume(thread)
+        assert(ok and delay == 5000, 'departing cleanup must preserve the five-second delay')
+        ok, delay = coroutine.resume(thread)
+        assert(ok, delay)
+        assert(coroutine.status(thread) == 'dead')
+    end
+    assert(loadfile(arg[1] or root .. 'jobs/taxi/client.lua', 't', client))()
+    local beforePay = #payments
+    actions[1].action()
+    local vehicle, firstPassenger = created[1].entity, created[2].entity
+    positions[1] = zones[1].coords
+    zones[1].onEnter(); deliver()
+    positions[1] = zones[2].coords
+    zones[2].onEnter()
+    assert(left[1][1] == firstPassenger and left[1][2] == vehicle and left[1][3] == 0)
+    assert(#removed == 0 and #threads == 1, 'departing passenger stays during the existing delay')
+    deliver()
+    local secondPassenger = created[3].entity
+    assert(#payments == beforePay + 1 and alive[firstPassenger] and alive[secondPassenger],
+        'the actual server must pay and start the next fare before cleanup')
+    cleanup(threads[1]) -- Start after the next fare, matching a deferred client thread.
+    assert(removed[1] == firstPassenger and not alive[firstPassenger] and alive[secondPassenger],
+        'the first completed passenger must be removed while the next passenger remains')
+    positions[1] = zones[3].coords
+    zones[3].onEnter(); deliver()
+    positions[1] = zones[4].coords
+    zones[4].onEnter(); deliver()
+    local thirdPassenger = created[4].entity
+    assert(#payments == beforePay + 2 and left[2][1] == secondPassenger and alive[thirdPassenger])
+    actions[2].action() -- Returning the taxi clears mutable npc before the pending cleanup starts.
+    assert(not alive[thirdPassenger] and not alive[vehicle] and alive[secondPassenger])
+    cleanup(threads[2])
+    assert(removed[#removed] == secondPassenger and not alive[secondPassenger],
+        'returning the taxi must not discard a completed passenger cleanup handle')
+    env.TriggerClientEvent = originalSpawn
+end
+
+print('taxi server: replacement requires a new pickup; fare, isolation, lifecycle and departing passenger cleanup checks passed')

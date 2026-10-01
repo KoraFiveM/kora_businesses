@@ -11,13 +11,14 @@ local function dropOff()
         rotation = 0,
         debug = false,
         onEnter = function()
+            local departingNpc = npc
             TaskLeaveVehicle(npc, taxi, 0)
             dropOffZone.remove()
             TriggerServerEvent('qb-taxi:dropOff')
             pickupLocation, destination = nil, nil
             CreateThread(function()
                 Wait(5000)
-                QB.entities.remove(npc)
+                QB.entities.remove(departingNpc)
             end)
         end,
     })
