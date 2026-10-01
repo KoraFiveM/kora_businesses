@@ -122,4 +122,50 @@ equal(start(1), true, 'a string-zero deposit remains free')
 equal(debits, freeDebits, 'string-zero stands skip the debit')
 equal(stop(1), true, 'a string-zero stand retains its successful return contract')
 equal(handle.PlayerData.money.bank, 1000, 'a string-zero stand never changes the balance')
-print('qbbusinesses hotdog: ' .. checks .. ' deposit checks passed')
+-- The actual client closure reads its cached skill level; no cart/native loop is run.
+local clientEvents = {}
+local clientData = { job = { name = 'hotdog' }, skills = { cooking = { level = 1, xp = 0 } } }
+env.exports['qb-core'].GetCoreObject = function()
+    return { Functions = { GetPlayerData = function() return clientData end } }
+end
+env.RegisterNetEvent = function(name, fn) clientEvents[name] = fn end
+env.CreateThread = function() end
+env.QB.nui = { registerApp = function() end }
+env.QB.keybind = { add = function() end }
+env.QB.blips = { create = function() return 1 end, remove = function() end }
+assert(loadfile(root .. 'jobs/hotdog/client.lua', 't', env))()
+local function upvalue(fn, wanted)
+    for index = 1, debug.getinfo(fn, 'u').nups do
+        local name, value = debug.getupvalue(fn, index)
+        if name == wanted then return value end
+    end
+    error('missing actual client closure: ' .. wanted)
+end
+local startSelling = upvalue(assert(clientEvents['qb-hotdogjob:client:ToggleSell']), 'startSelling')
+local sellToPed = upvalue(startSelling, 'sellToPed')
+local offerRange = upvalue(sellToPed, 'offerRange')
+local getLevel = upvalue(offerRange, 'getLevel')
+for _, case in ipairs({
+    { level = 1, tier = 1 }, { level = 2, tier = 2 }, { level = 3, tier = 3 },
+    { level = 4, tier = 4 }, { level = 5, tier = 4 }, { level = 15, tier = 4 },
+    { level = 30, tier = 4 }, { level = 70, tier = 4 }, { level = 90, tier = 4 },
+    { level = 99, tier = 4 },
+}) do
+    local level = case.level
+    clientData.skills.cooking.level = level
+    clientEvents['QBCore:Client:OnPlayerLoaded']()
+    equal(getLevel(), level, 'price selection preserves the cooking level')
+    for _, quality in ipairs({ 'common', 'rare', 'exotic' }) do
+        for _, amount in ipairs({ 1, 3 }) do
+            local price = config.Stock[quality].Price[case.tier]
+            equal(offerRange(quality, amount), ('%d-%d'):format(price.min * amount, price.max * amount),
+                'offer range matches authoritative price tier and unchanged amount format')
+        end
+    end
+end
+clientData.skills = nil
+clientEvents['QBCore:Client:OnPlayerLoaded']()
+local price = config.Stock.common.Price[1]
+equal(offerRange('common', 1), ('%d-%d'):format(price.min, price.max), 'missing skills preserve the level-one fallback')
+
+print('qbbusinesses hotdog: ' .. checks .. ' deposit and offer-price checks passed')

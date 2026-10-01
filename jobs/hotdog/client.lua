@@ -201,7 +201,7 @@ local function pickHotdog()
 end
 
 local function offerRange(quality, amount)
-    local price = Hotdog.Stock[quality].Price[getLevel()]
+    local price = Hotdog.Stock[quality].Price[math.min(getLevel(), 4)]
     return ('%d-%d'):format(price.min * amount, price.max * amount)
 end
 
