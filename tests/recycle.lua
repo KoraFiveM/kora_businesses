@@ -11,7 +11,6 @@ env = setmetatable({
         distance = { player = function(_, coords) return zone == coords end },
     },
     exports = {
-        ['qb-core'] = { GetShared = function() return {} end },
         qbinventory = { addItem = function() additions = additions + 1; return true end },
     },
     RegisterNetEvent = function(name, fn) events[name] = fn end,

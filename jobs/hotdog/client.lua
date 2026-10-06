@@ -1,5 +1,4 @@
-local QBCore = exports['qb-core']:GetCoreObject({ 'Functions' })
-local playerData = QBCore.Functions.GetPlayerData()
+local playerData = exports.qbcore:getPlayerData()
 
 
 local standModel = 'prop_hotdogstand_01'
@@ -653,7 +652,7 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    playerData = QBCore.Functions.GetPlayerData()
+    playerData = exports.qbcore:getPlayerData()
     updateBlip()
 end)
 

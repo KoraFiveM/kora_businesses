@@ -48,7 +48,15 @@ local function setup(spawnIndex, rejectRegistration)
                 return #(entities[1].coords - coords) <= distance
             end },
         },
-        exports = { qbcore = { getPlayerData = function() return { job = { name = 'garbage' } } end } },
+        exports = { qbcore = {
+            getPlayerData = function() return { job = { name = 'garbage' } } end,
+            addMoney = function(_, src, account, amount, reason)
+                assert(src == 1 and account == 'bank' and reason == 'garbage-route')
+                if state.rejectPayment then return false end
+                state.paid = (state.paid or 0) + amount
+                return true
+            end,
+        } },
     }, { __index = _G })
     loadResource('jobs/garbage/shared.lua', env)
     entities[1] = { coords = env.Garbage.Peds[1].coords }
@@ -198,6 +206,16 @@ for index, stop in ipairs(state.route) do
         assert(next(state.activeZones) == nil, 'finishing the route removes the final stop target')
     end
 end
+
+entities[1].coords = env.Garbage.Locations.main
+entities[state.truck].coords = env.Garbage.Locations.main
+state.rejectPayment = true
+assert(callbacks['qb-garbagejob:returnTruck'](1, state.truck + 1000) == false)
+assert(entities[state.truck] and not state.paid, 'a failed payout keeps the completed route available')
+state.rejectPayment = false
+assert(callbacks['qb-garbagejob:returnTruck'](1, state.truck + 1000) == #state.route * 50)
+assert(state.paid == #state.route * 50 and not entities[state.truck], 'completed routes pay through qbcore once')
+assert(callbacks['qb-garbagejob:returnTruck'](1, state.truck + 1000) == false)
 
 env, callbacks, entities, calls, state = setup(1, false)
 for _ = 1, 2 do

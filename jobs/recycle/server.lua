@@ -1,4 +1,3 @@
-local sharedItems = exports['qb-core']:GetShared('Items')
 local Recieve = {
     { item = 'metalscrap', min = 1, max = 5 },
     { item = 'plastic',    min = 1, max = 5 },
@@ -74,16 +73,14 @@ local function getItem(source, item, amount)
 end
 
 local function sellMaterials(src, item, amount)
-    local Player = exports['qb-core']:GetPlayer(src)
-    if not Player then return end
-    local has = Player.GetItemByName(item)
+    local has = exports.qbcore:getItemByName(src, item)
     if not has or has.amount <= 0 then return end
     amount = tonumber(amount)
     if not amount or amount ~= math.floor(amount) or amount <= 0 then return end
     amount = math.min(amount, has.amount, maxSell)
     local price = Sales[item] * amount
-    if not exports['qb-inventory']:RemoveItem(src, item, amount) then return end
-    Player.Functions.AddMoney('cash', price)
+    if not exports.qbinventory:removeItem(src, item, amount) then return end
+    exports.qbcore:addMoney(src, 'cash', price)
     adjustStock(item, 'add', amount)
 end
 

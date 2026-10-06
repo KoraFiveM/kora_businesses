@@ -199,15 +199,10 @@ QB.callback.register('qb-garbagejob:returnTruck', function(source, vehicleNet)
         return false
     end
 
-    local Player = exports.qbcore:getPlayer(source)
     local stops = #job.route
     local payment = stops * 50
 
-    if Player and Player.Functions and Player.Functions.AddMoney then
-        Player.Functions.AddMoney('bank', payment, 'garbage-route')
-    else
-        return false
-    end
+    if not exports.qbcore:addMoney(source, 'bank', payment, 'garbage-route') then return false end
 
     DeleteEntity(vehicle)
     onJob[source] = nil

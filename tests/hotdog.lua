@@ -45,9 +45,11 @@ legacy.AddMoney = function(account, amount, reason)
     refunds = refunds + 1
     return env.Core.money.addMoney(1, account, amount, reason)
 end
-env.exports = { ['qb-core'] = {
-    GetCoreObject = function() return { Commands = { Add = function() end } } end,
-    GetPlayer = function(_, src) return src == 1 and legacy or nil end,
+env.exports = { qbcore = {
+    getPlayerData = function(_, src) return src == 1 and handle.PlayerData or nil end,
+    removeMoney = function(_, src, ...) assert(src == 1); return legacy.RemoveMoney(...) end,
+    addMoney = function(_, src, ...) assert(src == 1); return legacy.AddMoney(...) end,
+    addCommand = function() end,
 } }
 assert(loadfile(root .. 'jobs/hotdog/config.lua', 't', env))()
 assert(loadfile(root .. 'jobs/hotdog/server.lua', 't', env))()
@@ -125,9 +127,7 @@ equal(handle.PlayerData.money.bank, 1000, 'a string-zero stand never changes the
 -- The actual client closure reads its cached skill level; no cart/native loop is run.
 local clientEvents = {}
 local clientData = { job = { name = 'hotdog' }, skills = { cooking = { level = 1, xp = 0 } } }
-env.exports['qb-core'].GetCoreObject = function()
-    return { Functions = { GetPlayerData = function() return clientData end } }
-end
+env.exports.qbcore.getPlayerData = function() return clientData end
 env.RegisterNetEvent = function(name, fn) clientEvents[name] = fn end
 local clientThreads = {}
 env.CreateThread = function(fn) clientThreads[#clientThreads + 1] = fn end

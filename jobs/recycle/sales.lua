@@ -1,7 +1,5 @@
-local sharedItems = exports['qb-core']:GetShared('Items')
-
 local function hasItem(item)
-    return exports['qb-inventory']:HasItem(item)
+    return exports.qbinventory:HasItem(item)
 end
 
 local function sellMaterials()
@@ -18,13 +16,13 @@ local function sellMaterials()
 
         for itemName, price in pairs(itemList) do
             if hasItem(itemName) then
-                local item = sharedItems[itemName] or { name = itemName, label = itemName }
+                local item = exports.qbcore:getShared('items', itemName) or { name = itemName, label = itemName }
 
                 items[#items + 1] = {
                     id = 'material:' .. itemName,
                     label = item.label,
                     description = QB.lang('recycle.text.price', price),
-                    image = 'nui://qbinventory/images/' .. item.image,
+                    image = item.image and 'nui://qbinventory/images/' .. item.image,
                     action = {
                         id = sellAction,
                         label = QB.lang('recycle.text.sell'),

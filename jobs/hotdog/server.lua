@@ -1,5 +1,3 @@
-local QBCore = exports['qb-core']:GetCoreObject({ 'Functions', 'Commands' })
-
 local Stock = {}      -- Stock[citizenid] = { common = n, rare = n, exotic = n }
 local Working = {}    -- Working[citizenid] = true while the deposit is held
 local Preparing = {}  -- Preparing[citizenid] = true while a prepare round is live, blocks overlap
@@ -8,16 +6,16 @@ local function fail(msg)
     return false
 end
 local function player(src) 
-    return exports['qb-core']:GetPlayer(src)
+    return exports.qbcore:getPlayerData(src)
 end
 local function citizenId(src)
     local p = player(src)
-    return p and p.PlayerData.citizenid
+    return p and p.citizenid
 end
 
 local function isHotdog(src)
     local p = player(src)
-    return p and p.PlayerData.job.name == 'hotdog'
+    return p and p.job.name == 'hotdog'
 end
 local function skillData(src)
     if GetResourceState('qbskills') ~= 'started' then return nil end
@@ -48,7 +46,7 @@ QB.callback.register('qb-hotdogjob:startWorking', function(src)
     if Working[cid] then return fail('You are already working.') end
     local deposit = tonumber(Hotdog.StandDeposit) or 0
     if deposit > 0 then
-        local paid, err = p.RemoveMoney('bank', Hotdog.StandDeposit, 'hot dog deposit')
+        local paid, err = exports.qbcore:removeMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
         if not paid then return fail(err or QB.lang('hotdog.error.no_money')) end
     end
     Working[cid] = true
@@ -62,7 +60,7 @@ QB.callback.register('qb-hotdogjob:stopWorking', function(src)
     if not cid or not p then return fail('Player not found.') end
     if not Working[cid] then return fail(QB.lang('hotdog.error.no_stand_found')) end
 
-    p.AddMoney('bank', Hotdog.StandDeposit, 'hot dog deposit')
+    exports.qbcore:addMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
     clearWorkingState(cid)
     return true
 end)
@@ -126,12 +124,11 @@ QB.callback.register('qb-hotdogjob:sell', function(src, netId, quality, amount)
 
     stock[quality] = stock[quality] - amount
 
-    local p = player(src)
-    p.AddMoney('cash', total, 'sold hotdog')
+    exports.qbcore:addMoney(src, 'cash', total, 'sold hotdog')
     exports.qbskills:addRep(src, Hotdog.Skill, Hotdog.SaleXp[quality] * amount)
     return { amount = amount, unitPrice = unitPrice, total = total }
 end)
 
-QBCore.Commands.Add('removestand', QB.lang('hotdog.info.command'), {}, false, function(source, _)
+exports.qbcore:addCommand('removestand', QB.lang('hotdog.info.command'), {}, false, function(source, _)
     TriggerClientEvent('qb-hotdogjob:staff:DeletStand', source)
 end, 'admin')
