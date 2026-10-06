@@ -2,8 +2,7 @@ local pickupBlip, pickupVeh, veh, towAttached, delay, blip = nil, nil, nil, fals
 
 local function delayed()
     delay = true
-    CreateThread(function()
-        Wait(5000)
+    SetTimeout(5000, function()
         delay = false
     end)
 end
@@ -13,8 +12,7 @@ local function reset()
     if pickupVeh then
         local vehicle = pickupVeh
         pickupVeh = nil
-        CreateThread(function()
-            Wait(15500)
+        SetTimeout(15500, function()
             DeleteVehicle(vehicle)
         end)
     end
@@ -26,6 +24,7 @@ local function setUpPickup(data)
     local vehicle, loc = indexed.model, indexed.coords
     QB.stream.loadModel(vehicle)
     pickupVeh = CreateVehicle(vehicle, loc, 0.0, true, true)
+    SetModelAsNoLongerNeeded(vehicle)
     pickupBlip = AddBlipForEntity(pickupVeh)
     QB.notify.send({
         title = 'Tow Job',
@@ -97,6 +96,7 @@ QB.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3, 
             end
             QB.stream.loadModel(Tow.Vehicles)
             veh = CreateVehicle(Tow.Vehicles, Tow.Locations.vehicle.spawncoords, Tow.Locations.vehicle.coords.h or 180.0, true, true)
+            SetModelAsNoLongerNeeded(Tow.Vehicles)
             SetEntityHeading(veh, Tow.Locations.vehicle.coords.h or 180.0)
             TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
             SetVehicleNumberPlateText(veh, "TOW")
@@ -167,10 +167,8 @@ end)
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function(JobInfo)
     if JobInfo.name == 'tow' then
         addBlips()
-    else
-        if blip then
-            RemoveBlip(blip)
-            blip = nil
-        end
+    elseif blip then
+        RemoveBlip(blip)
+        blip = nil
     end
 end)

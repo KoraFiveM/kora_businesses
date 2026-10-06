@@ -62,11 +62,7 @@ end
 local function checkStock(source, item, amount)
     if not Recycle.LimitedMaterials then return true end
     if not Stock[item] then return false end
-    if Stock[item] >= amount then
-        return true
-    else
-        return false
-    end
+    return Stock[item] >= amount
 end
 
 local function getItem(source, item, amount)
@@ -86,10 +82,9 @@ local function sellMaterials(src, item, amount)
     if not amount or amount ~= math.floor(amount) or amount <= 0 then return end
     amount = math.min(amount, has.amount, maxSell)
     local price = Sales[item] * amount
-    if exports['qb-inventory']:RemoveItem(src, item, amount) then
-        Player.Functions.AddMoney('cash', price)
-        adjustStock(item, 'add', amount)
-    end
+    if not exports['qb-inventory']:RemoveItem(src, item, amount) then return end
+    Player.Functions.AddMoney('cash', price)
+    adjustStock(item, 'add', amount)
 end
 
 QB.callback.register('qb-recyclejob:server:pickupPackage', function(src, index)

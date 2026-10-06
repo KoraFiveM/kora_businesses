@@ -39,18 +39,19 @@ local function sellMaterials()
         return items
     end
 
-    local function buildNavigation()
+    local function buildNavigation(items)
         return {{
             id = 'materials',
             label = QB.lang('recycle.text.sell_materials'),
             icon = 'DollarSign',
             content = {
                 title = QB.lang('recycle.text.sell_materials'),
-                blocks = {{ type = 'list', id = 'items', items = buildItems() }},
+                blocks = {{ type = 'list', id = 'items', items = items }},
             },
         }}
     end
 
+    local items = buildItems()
     QB.nui.registerApp({
         id = appId,
         title = 'Recycle Center',
@@ -61,7 +62,7 @@ local function sellMaterials()
         height = 700,
         placement = 'right',
         footer = 'Press Escape to close',
-        navigation = buildNavigation(),
+        navigation = buildNavigation(items),
 
         onAction = function(actionId, context)
             if actionId ~= sellAction then return end
@@ -78,28 +79,27 @@ local function sellMaterials()
             itemList = QB.callback.trigger('qb-recyclejob:server:getPriceList')
             if not itemList then return end
 
-            if #buildItems() == 0 then
+            local refreshedItems = buildItems()
+            if #refreshedItems == 0 then
                 QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.error.nothing_to_sell'), type = 'error' })
                 return
             end
 
-            QB.nui.updateApp(appId, { navigation = buildNavigation() })
+            QB.nui.updateApp(appId, { navigation = buildNavigation(refreshedItems) })
             QB.nui.openApp(appId)
         end,
     })
 
-    if #buildItems() == 0 then
+    if #items == 0 then
         QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.error.nothing_to_sell'), type = 'error' })
         return
     end
 
-    QB.nui.updateApp(appId, { navigation = buildNavigation() })
+    QB.nui.updateApp(appId, { navigation = buildNavigation(items) })
     QB.nui.openApp(appId)
 end
 
 if Recycle.SellMaterials then
-    QB.stream.loadModel('s_m_m_dockwork_01')
-
     local ped = QB.entities.create('s_m_m_dockwork_01', vector4(
         Recycle.SellPed.x, Recycle.SellPed.y, Recycle.SellPed.z, Recycle.SellPed.w or 180.0
     ), { freeze = true, invincible = true })
