@@ -39,7 +39,7 @@ CreateThread(function()
         print('^1[qbbusinesses]^7 qbsql was not ready; CCTV persistence is disabled.')
         return
     end
-    local migrated, err = QB.sql.migrateFiles(RESOURCE, { 'sql/001_cctv_callouts.sql' })
+    local migrated, err = QB.sql.migrateFiles(RESOURCE, {{ version = 2, name = 'cctv_callouts', file = 'sql/001_cctv_callouts.sql' }})
     if not migrated then print(('^1[qbbusinesses]^7 CCTV migration failed: %s'):format(err or 'unknown error')) end
 end)
 

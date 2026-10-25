@@ -32,6 +32,15 @@ local env = setmetatable({
 assert(loadfile(root .. 'jobs/cctv/shared.lua', 't', env))()
 env.Cctv.minimumEngineerGrade = 2
 assert(loadfile(root .. 'jobs/cctv/server.lua', 't', env))()
+env.QB.sql.ready = function() return true end
+env.QB.sql.migrateFiles = function(resource, migrations)
+    assert(resource == 'qbbusinesses' and migrations[1].version == 2)
+    assert(migrations[1].name == 'cctv_callouts' and migrations[1].file == 'sql/001_cctv_callouts.sql')
+    assert(io.open(root .. migrations[1].file, 'r')):close()
+    return true
+end
+assert(coroutine.resume(threads[1]))
+assert(coroutine.status(threads[1]) == 'dead', 'CCTV schema migration must finish')
 local callout = { id = 'test', status = 'open', issue = 'camera', business = 'shop', requester = 2, charge = 0 }
 api.getCctvCallouts().test = callout
 local function reject(candidate)
