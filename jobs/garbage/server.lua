@@ -33,7 +33,7 @@ local function getCurrentStop(job)
 end
 
 local function isGarbageJob(source)
-    local Player = exports.qbcore:getPlayerData(source)
+    local Player = exports.kora_core:getPlayerData(source)
     return Player and Player.job and Player.job.name == 'garbage'
 end
 
@@ -202,7 +202,7 @@ QB.callback.register('qb-garbagejob:returnTruck', function(source, vehicleNet)
     local stops = #job.route
     local payment = stops * 50
 
-    if not exports.qbcore:addMoney(source, 'bank', payment, 'garbage-route') then return false end
+    if not exports.kora_core:addMoney(source, 'bank', payment, 'garbage-route') then return false end
 
     DeleteEntity(vehicle)
     onJob[source] = nil

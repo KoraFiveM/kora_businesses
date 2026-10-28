@@ -1,5 +1,5 @@
 local function hasItem(item)
-    return exports.qbinventory:HasItem(item)
+    return exports.kora_inventory:HasItem(item)
 end
 
 local function sellMaterials()
@@ -16,13 +16,13 @@ local function sellMaterials()
 
         for itemName, price in pairs(itemList) do
             if hasItem(itemName) then
-                local item = exports.qbcore:getShared('items', itemName) or { name = itemName, label = itemName }
+                local item = exports.kora_core:getShared('items', itemName) or { name = itemName, label = itemName }
 
                 items[#items + 1] = {
                     id = 'material:' .. itemName,
                     label = item.label,
                     description = QB.lang('recycle.text.price', price),
-                    image = item.image and 'nui://qbinventory/images/' .. item.image,
+                    image = item.image and 'nui://kora_inventory/images/' .. item.image,
                     action = {
                         id = sellAction,
                         label = QB.lang('recycle.text.sell'),
@@ -102,7 +102,7 @@ if Recycle.SellMaterials then
         Recycle.SellPed.x, Recycle.SellPed.y, Recycle.SellPed.z, Recycle.SellPed.w or 180.0
     ), { freeze = true, invincible = true })
 
-    exports.qbtarget:addEntity(ped, {{
+    exports.kora_target:addEntity(ped, {{
         icon = 'fas fa-dollar-sign',
         label = QB.lang('recycle.text.sell_materials'),
         onSelect = sellMaterials,

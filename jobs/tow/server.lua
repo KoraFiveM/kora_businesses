@@ -9,12 +9,12 @@ QB.callback.register('qb-tow:server:TakeOutVehicle', function(source)
     assert(QB.distance.player(source, Tow.Locations.vehicle.coords, 10.0), "Player is too far from the vehicle location")
     assert(not towDrivers[source], "Player already has a tow vehicle out")
 
-    local job = exports.qbcore:getPlayerData(source).job
+    local job = exports.kora_core:getPlayerData(source).job
     assert(job, "Player job data is nil")
 
     if job.name ~= 'tow' then return end
 
-    exports.qbvehiclekeys:giveKeys(source, 'TOW', true)
+    exports.kora_vehiclekeys:giveKeys(source, 'TOW', true)
 
     towDrivers[source] = {
         location = getNewLocation(),
@@ -56,7 +56,7 @@ QB.callback.register('qb-tow:server:ReturnVehicle', function(source)
     assert(QB.distance.player(source, Tow.Locations.vehicle.coords, 10.0), "Player is too far from the vehicle location")
 
     if towDrivers[source].droppedOff > 0 then
-        exports.qbcore.addMoney(source, 'bank', towDrivers[source].droppedOff * Tow.payPerVehicle)
+        exports.kora_core.addMoney(source, 'bank', towDrivers[source].droppedOff * Tow.payPerVehicle)
         QB.notify.send(source, {
             title = 'qb-towjob',
             message = ('You received $%s for %s vehicle(s).'):format(
@@ -68,7 +68,7 @@ QB.callback.register('qb-tow:server:ReturnVehicle', function(source)
     end
 
     towDrivers[source] = nil
-    exports.qbvehiclekeys:removeKeys(source, 'TOW')
+    exports.kora_vehiclekeys:removeKeys(source, 'TOW')
 
     return true
 end)

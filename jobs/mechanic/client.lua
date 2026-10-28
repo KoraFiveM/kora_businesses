@@ -86,7 +86,7 @@ local function notify(message, kind)
 end
 
 local function playerJob()
-    local ok, job = pcall(function() return exports.qbcore:getPlayerData({ 'job' }) end)
+    local ok, job = pcall(function() return exports.kora_core:getPlayerData({ 'job' }) end)
     return ok and job or nil
 end
 
@@ -209,7 +209,7 @@ RegisterNetEvent('qbbusinesses:client:serviceApplied', function(action, netId, p
 end)
 
 exports['qb-target']:AddGlobalVehicle({ options = {
-    -- qbtarget invokes legacy `action` handlers inside a protected dispatch;
+    -- kora_target invokes legacy `action` handlers inside a protected dispatch;
     -- start a fresh coroutine because dialogs, callbacks and progress bars all
     -- yield while the player works.
     { icon = 'fas fa-wrench', label = 'Full garage repair', action = function(entity) CreateThread(function() beginService('fullRepair', entity) end) end, canInteract = canFullRepair, distance = Mechanic.interaction.distance },

@@ -40,7 +40,7 @@ local function setUpPickup(data)
     AddTextComponentSubstringPlayerName("Tow Pickup")
     EndTextCommandSetBlipName(pickupBlip)
     SetNewWaypoint(loc.x, loc.y)
-    exports.qbtarget:addEntity(pickupVeh, {
+    exports.kora_target:addEntity(pickupVeh, {
             {
                 label = "Tow Vehicle",
                 icon = "fas fa-car",
@@ -159,7 +159,7 @@ local function addBlips()
 end
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    if exports.qbcore:getPlayerData().job.name == 'tow' then
+    if exports.kora_core:getPlayerData().job.name == 'tow' then
         addBlips()
     end
 end)

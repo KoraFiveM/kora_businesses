@@ -1,4 +1,4 @@
-local playerData = exports.qbcore:getPlayerData()
+local playerData = exports.kora_core:getPlayerData()
 
 
 local standModel = 'prop_hotdogstand_01'
@@ -652,7 +652,7 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    playerData = exports.qbcore:getPlayerData()
+    playerData = exports.kora_core:getPlayerData()
     updateBlip()
 end)
 

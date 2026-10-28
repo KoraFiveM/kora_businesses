@@ -1,7 +1,7 @@
 -- Exercise the real deposit callbacks against the sibling core's money implementation.
--- Set QB_CORE_ROOT if qbcore is checked out somewhere else.
+-- Set QB_CORE_ROOT if kora_core is checked out somewhere else.
 local root = debug.getinfo(1, 'S').source:sub(2):match('(.*/)') .. '../'
-local coreRoot = os.getenv('QB_CORE_ROOT') or root .. '../qbcore'
+local coreRoot = os.getenv('QB_CORE_ROOT') or root .. '../kora_core'
 local env = {}
 for name, value in pairs(_G) do env[name] = value end
 env.Config, env.Hotdog, env.Globals = nil, nil, {}
@@ -45,7 +45,7 @@ legacy.AddMoney = function(account, amount, reason)
     refunds = refunds + 1
     return env.Core.money.addMoney(1, account, amount, reason)
 end
-env.exports = { qbcore = {
+env.exports = { kora_core = {
     getPlayerData = function(_, src) return src == 1 and handle.PlayerData or nil end,
     removeMoney = function(_, src, ...) assert(src == 1); return legacy.RemoveMoney(...) end,
     addMoney = function(_, src, ...) assert(src == 1); return legacy.AddMoney(...) end,
@@ -127,7 +127,7 @@ equal(handle.PlayerData.money.bank, 1000, 'a string-zero stand never changes the
 -- The actual client closure reads its cached skill level; no cart/native loop is run.
 local clientEvents = {}
 local clientData = { job = { name = 'hotdog' }, skills = { cooking = { level = 1, xp = 0 } } }
-env.exports.qbcore.getPlayerData = function() return clientData end
+env.exports.kora_core.getPlayerData = function() return clientData end
 env.RegisterNetEvent = function(name, fn) clientEvents[name] = fn end
 local clientThreads = {}
 env.CreateThread = function(fn) clientThreads[#clientThreads + 1] = fn end
@@ -170,12 +170,12 @@ local price = config.Stock.common.Price[1]
 equal(offerRange('common', 1), ('%d-%d'):format(price.min, price.max), 'missing skills preserve the level-one fallback')
 
 -- Locale values must reach the real formatter, not a key-only fixture.
-local libraryRoot = os.getenv('QB_LIB_ROOT') or root .. '../qblib'
+local libraryRoot = os.getenv('QB_LIB_ROOT') or root .. '../kora_lib'
 env.QB.locale = {}
-env.GetInvokingResource = function() return 'qbbusinesses' end
-env.GetCurrentResourceName = function() return 'qbbusinesses' end
+env.GetInvokingResource = function() return 'kora_businesses' end
+env.GetCurrentResourceName = function() return 'kora_businesses' end
 env.LoadResourceFile = function(resource, path)
-    if resource ~= 'qbbusinesses' then return nil end
+    if resource ~= 'kora_businesses' then return nil end
     local file = io.open(root .. path, 'rb')
     if not file then return nil end
     local value = file:read('*a'); file:close()

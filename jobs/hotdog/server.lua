@@ -6,7 +6,7 @@ local function fail(msg)
     return false
 end
 local function player(src) 
-    return exports.qbcore:getPlayerData(src)
+    return exports.kora_core:getPlayerData(src)
 end
 local function citizenId(src)
     local p = player(src)
@@ -18,8 +18,8 @@ local function isHotdog(src)
     return p and p.job.name == 'hotdog'
 end
 local function skillData(src)
-    if GetResourceState('qbskills') ~= 'started' then return nil end
-    return exports.qbskills:getRep(src, Hotdog.Skill)
+    if GetResourceState('kora_skills') ~= 'started' then return nil end
+    return exports.kora_skills:getRep(src, Hotdog.Skill)
 end
 
 local function levelFor(src)
@@ -46,7 +46,7 @@ QB.callback.register('qb-hotdogjob:startWorking', function(src)
     if Working[cid] then return fail('You are already working.') end
     local deposit = tonumber(Hotdog.StandDeposit) or 0
     if deposit > 0 then
-        local paid, err = exports.qbcore:removeMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
+        local paid, err = exports.kora_core:removeMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
         if not paid then return fail(err or QB.lang('hotdog.error.no_money')) end
     end
     Working[cid] = true
@@ -60,7 +60,7 @@ QB.callback.register('qb-hotdogjob:stopWorking', function(src)
     if not cid or not p then return fail('Player not found.') end
     if not Working[cid] then return fail(QB.lang('hotdog.error.no_stand_found')) end
 
-    exports.qbcore:addMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
+    exports.kora_core:addMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
     clearWorkingState(cid)
     return true
 end)
@@ -97,7 +97,7 @@ QB.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, author
     stock[quality] = stock[quality] + granted
 
     local p = player(src)
-    exports.qbskills:addRep(src, Hotdog.Skill, Hotdog.PrepareXp[quality] * granted)
+    exports.kora_skills:addRep(src, Hotdog.Skill, Hotdog.PrepareXp[quality] * granted)
 
     return { quality = quality, amount = granted, label = Hotdog.Stock[quality].Label, full = granted < amount }
 end)
@@ -124,11 +124,11 @@ QB.callback.register('qb-hotdogjob:sell', function(src, netId, quality, amount)
 
     stock[quality] = stock[quality] - amount
 
-    exports.qbcore:addMoney(src, 'cash', total, 'sold hotdog')
-    exports.qbskills:addRep(src, Hotdog.Skill, Hotdog.SaleXp[quality] * amount)
+    exports.kora_core:addMoney(src, 'cash', total, 'sold hotdog')
+    exports.kora_skills:addRep(src, Hotdog.Skill, Hotdog.SaleXp[quality] * amount)
     return { amount = amount, unitPrice = unitPrice, total = total }
 end)
 
-exports.qbcore:addCommand('removestand', QB.lang('hotdog.info.command'), {}, false, function(source, _)
+exports.kora_core:addCommand('removestand', QB.lang('hotdog.info.command'), {}, false, function(source, _)
     TriggerClientEvent('qb-hotdogjob:staff:DeletStand', source)
 end, 'admin')

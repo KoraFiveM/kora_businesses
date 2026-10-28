@@ -16,7 +16,7 @@ env.QB = {
         return authorized
     end },
 }
-env.exports = { qbtarget = { addEntity = function(_, _, options) pickupOptions = options end } }
+env.exports = { kora_target = { addEntity = function(_, _, options) pickupOptions = options end } }
 env.CreateVehicle = function(model)
     local handle = 700 + #vehicles + 1
     vehicles[#vehicles + 1] = { model = model, handle = handle }

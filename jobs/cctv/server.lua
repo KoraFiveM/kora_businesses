@@ -23,8 +23,8 @@ if not QB.shared.get('items', Cctv.laptopItem) then
     if not registered then print(('^1[qbbusinesses]^7 CCTV laptop registration failed: %s'):format(err or 'unknown error')) end
 end
 
-exports.qbinventory:CreateUsableItem(Cctv.laptopItem, function(src)
-    local job = exports.qbcore:getJob(src)
+exports.kora_inventory:CreateUsableItem(Cctv.laptopItem, function(src)
+    local job = exports.kora_core:getJob(src)
     local grade = job and job.grade and (job.grade.level or job.grade)
     if not job or job.name ~= Cctv.job or (Cctv.requireOnDuty and not job.onduty)
         or tonumber(grade) < Cctv.minimumEngineerGrade then
@@ -54,7 +54,7 @@ local function notify(src, message, kind)
 end
 
 local function playerJob(src)
-    local job = exports.qbcore:getJob(src)
+    local job = exports.kora_core:getJob(src)
     if not job or job.name ~= Cctv.job then return nil end
     if Cctv.requireOnDuty and not job.onduty then return nil end
     local grade = job.grade and (job.grade.level or job.grade)
@@ -63,8 +63,8 @@ local function playerJob(src)
 end
 
 local function engineerOnline()
-    for _, src in ipairs(exports.qbcore:getPlayersByJob(Cctv.job, Cctv.requireOnDuty)) do
-        local job = exports.qbcore:getJob(src)
+    for _, src in ipairs(exports.kora_core:getPlayersByJob(Cctv.job, Cctv.requireOnDuty)) do
+        local job = exports.kora_core:getJob(src)
         local grade = job and job.grade and (job.grade.level or job.grade)
         if job and (not Cctv.requireOnDuty or job.onduty) and tonumber(grade) >= Cctv.minimumEngineerGrade then
             return true
@@ -74,7 +74,7 @@ local function engineerOnline()
 end
 
 local function customerJob(src, business)
-    local job = exports.qbcore:getJob(src)
+    local job = exports.kora_core:getJob(src)
     if not job or type(business) ~= 'string' or #business > 50 or job.name ~= business then return nil end
     return job
 end
@@ -82,7 +82,7 @@ end
 local function customer(src, data)
     if type(data) ~= 'table' then return nil, 'Invalid customer data.' end
     if data.customerType == 'residential' then
-        local player = exports.qbcore:getPlayer(src)
+        local player = exports.kora_core:getPlayer(src)
         if not player or type(data.citizenid) ~= 'string' or data.citizenid ~= player.citizenid then
             return nil, 'You are not authorised for that home.'
         end
@@ -97,17 +97,17 @@ end
 local function debitCustomer(src, account, value, reason)
     if value <= 0 then return true end
     if account.type == 'residential' then
-        return exports.qbcore:removeMoney(src, 'bank', value, reason)
+        return exports.kora_core:removeMoney(src, 'bank', value, reason)
     end
-    return exports.qbbanking:RemoveMoney(account.business, value, reason)
+    return exports.kora_banking:RemoveMoney(account.business, value, reason)
 end
 
 local function refundCustomer(src, account, value, reason)
     if value <= 0 then return true end
     if account.type == 'residential' then
-        return exports.qbcore:addMoney(src, 'bank', value, reason)
+        return exports.kora_core:addMoney(src, 'bank', value, reason)
     end
-    return exports.qbbanking:AddMoney(account.business, value, reason)
+    return exports.kora_banking:AddMoney(account.business, value, reason)
 end
 
 local function accountKey(account)
@@ -131,7 +131,7 @@ end
 local function calloutFor(src, id)
     local callout = callouts[id]
     if not callout then return nil, 'That CCTV call-out does not exist.' end
-    if callout.business ~= (exports.qbcore:getJob(src) or {}).name and not playerJob(src) then
+    if callout.business ~= (exports.kora_core:getJob(src) or {}).name and not playerJob(src) then
         return nil, 'You are not authorised to manage this call-out.'
     end
     return callout
@@ -212,7 +212,7 @@ QB.callback.register('qbbusinesses:cctv:completeCallout', function(src, id)
         return false, 'The business cannot afford the repair.'
     end
     local paid = callout.charge + price
-    if paid > 0 and not exports.qbbanking:AddMoney(Cctv.job, paid, 'cctv-callout-completed') then
+    if paid > 0 and not exports.kora_banking:AddMoney(Cctv.job, paid, 'cctv-callout-completed') then
         if price > 0 then refundCustomer(payer, account, price, 'cctv-repair-refund') end
         return false, 'The CCTV company account could not be credited.'
     end

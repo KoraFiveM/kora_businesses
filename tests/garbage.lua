@@ -25,7 +25,7 @@ local function setup(spawnIndex, rejectRegistration)
     local function record(name) calls[#calls + 1] = name end
     local env = setmetatable({
         Globals = {}, vector3 = vector, vector4 = vector, joaat = function(value) return value end,
-        GetCurrentResourceName = function() return 'qbbusinesses' end,
+        GetCurrentResourceName = function() return 'kora_businesses' end,
         AddEventHandler = function(name, fn)
             state.events[name] = state.events[name] or {}
             table.insert(state.events[name], fn)
@@ -48,7 +48,7 @@ local function setup(spawnIndex, rejectRegistration)
                 return #(entities[1].coords - coords) <= distance
             end },
         },
-        exports = { qbcore = {
+        exports = { kora_core = {
             getPlayerData = function() return { job = { name = 'garbage' } } end,
             addMoney = function(_, src, account, amount, reason)
                 assert(src == 1 and account == 'bank' and reason == 'garbage-route')
@@ -84,7 +84,7 @@ local function setup(spawnIndex, rejectRegistration)
     env.QB.notify = { send = function(message)
         if message.type == 'error' then state.errors = state.errors + 1 end
     end }
-    env.exports.qbtarget = {
+    env.exports.kora_target = {
         addEntity = function(_, entity, options)
             if entity == 2 then
                 state.start = options[1]
@@ -237,7 +237,7 @@ emit(state, 'onResourceStop', 'another-resource')
 assert(state.activeZones[zoneId], 'another resource stopping does not remove the active stop')
 -- An externally deleted truck still needs its stop zone cleaned up.
 entities[state.truck] = nil
-emit(state, 'onResourceStop', 'qbbusinesses')
+emit(state, 'onResourceStop', 'kora_businesses')
 assert(state.activeZones[zoneId] == nil, 'resource stop removes the active stop target')
 assert(state.activeZones[99] and #state.removedZones == 3, 'cleanup preserves unrelated zones')
 print('qbbusinesses garbage: truck registration, bag deposits, failure cleanup and stop zone lifecycle passed')

@@ -11,14 +11,14 @@ local env = setmetatable({
         sql = { query = function() reads = reads + 1; return {} end },
     },
     exports = setmetatable({
-        qbcore = { getJob = function() return job end },
-        qbinventory = { CreateUsableItem = noop },
-        qbbanking = {
+        kora_core = { getJob = function() return job end },
+        kora_inventory = { CreateUsableItem = noop },
+        kora_banking = {
             RemoveMoney = function() charges = charges + 1; return true end,
             AddMoney = function() return true end,
         },
     }, { __call = function(_, name, fn) api[name] = fn end }),
-    GetCurrentResourceName = function() return 'qbbusinesses' end,
+    GetCurrentResourceName = function() return 'kora_businesses' end,
     AddEventHandler = function(name, fn) handlers[name] = fn end,
     CreateThread = function(fn) threads[#threads + 1] = coroutine.create(fn) end,
     Wait = function() coroutine.yield() end,
@@ -34,7 +34,7 @@ env.Cctv.minimumEngineerGrade = 2
 assert(loadfile(root .. 'jobs/cctv/server.lua', 't', env))()
 env.QB.sql.ready = function() return true end
 env.QB.sql.migrateFiles = function(resource, migrations)
-    assert(resource == 'qbbusinesses' and migrations[1].version == 2)
+    assert(resource == 'kora_businesses' and migrations[1].version == 2)
     assert(migrations[1].name == 'cctv_callouts' and migrations[1].file == 'sql/001_cctv_callouts.sql')
     assert(io.open(root .. migrations[1].file, 'r')):close()
     return true

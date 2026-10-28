@@ -22,7 +22,7 @@ end
 
 local function removeStopZone()
     if garbage.stopZone then
-        exports.qbtarget:removeZone(garbage.stopZone)
+        exports.kora_target:removeZone(garbage.stopZone)
         garbage.stopZone = nil
     end
 end
@@ -101,7 +101,7 @@ local function setupStop(stopId, bagsRequired)
     createStopBlip(stopId)
 
     local stop = Garbage.Locations.trashcan[stopId]
-    garbage.stopZone = exports.qbtarget:addBoxZone({
+    garbage.stopZone = exports.kora_target:addBoxZone({
         coords = vector3(stop.coords.x, stop.coords.y, stop.coords.z),
         size = vector3(1.5, 1.5, 1.5),
         rotation = stop.coords.w or 180.0,
@@ -152,7 +152,7 @@ end
 local function addTruckTarget()
     if garbage.truckTargetAdded or not garbage.truck then return end
 
-    exports.qbtarget:addEntity(garbage.truck, {
+    exports.kora_target:addEntity(garbage.truck, {
         {
             icon = 'fas fa-dumpster',
             label = 'Throw Trash Bag',
@@ -245,7 +245,7 @@ local function addTruckTarget()
                 clearBag()
 
                 if DoesEntityExist(garbage.truck) then
-                    exports.qbtarget:RemoveTargetEntity(garbage.truck)
+                    exports.kora_target:RemoveTargetEntity(garbage.truck)
                     DeleteVehicle(garbage.truck)
                 end
 
@@ -268,7 +268,7 @@ local function addTruckTarget()
 end
 
 local function spawnTruck()
-    local playerData = exports.qbcore:getPlayerData()
+    local playerData = exports.kora_core:getPlayerData()
     if playerData.job.name ~= 'garbage' then return end
     if garbage.truck then return end
 
@@ -333,7 +333,7 @@ local function setUpPed()
             blockNonTempEvents = true,
         })
 
-        exports.qbtarget:addEntity(ped, {
+        exports.kora_target:addEntity(ped, {
             {
                 icon = 'fas fa-hand-paper',
                 label = 'Start Garbage Route',
@@ -341,7 +341,7 @@ local function setUpPed()
                     spawnTruck()
                 end,
                 canInteract = function()
-                    local playerData = exports.qbcore:getPlayerData()
+                    local playerData = exports.kora_core:getPlayerData()
                     return playerData.job and playerData.job.name == 'garbage'
                         and garbage.truck == nil
                 end,
@@ -376,7 +376,7 @@ AddEventHandler('QBCore:Client:OnJobUpdate', function(job)
         clearBag()
 
         if DoesEntityExist(garbage.truck) then
-            exports.qbtarget:RemoveTargetEntity(garbage.truck)
+            exports.kora_target:RemoveTargetEntity(garbage.truck)
             DeleteVehicle(garbage.truck)
         end
 
@@ -393,7 +393,7 @@ AddEventHandler('QBCore:Client:OnJobUpdate', function(job)
 end)
 
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
-    local playerData = exports.qbcore:getPlayerData()
+    local playerData = exports.kora_core:getPlayerData()
     if playerData.job.name == 'garbage' then
         createDepotBlip()
     else
@@ -409,7 +409,7 @@ AddEventHandler('onResourceStop', function(resource)
     clearBag()
 
     if garbage.truck and DoesEntityExist(garbage.truck) then
-        exports.qbtarget:RemoveTargetEntity(garbage.truck)
+        exports.kora_target:RemoveTargetEntity(garbage.truck)
         DeleteVehicle(garbage.truck)
     end
 end)
@@ -417,7 +417,7 @@ end)
 CreateThread(function()
     setUpPed()
 
-    local playerData = exports.qbcore:getPlayerData()
+    local playerData = exports.kora_core:getPlayerData()
     if playerData and playerData.job and playerData.job.name == 'garbage' then
         createDepotBlip()
     end

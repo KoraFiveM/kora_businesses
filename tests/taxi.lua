@@ -1,5 +1,5 @@
 local root = debug.getinfo(1, 'S').source:sub(2):match('(.*/)') .. '../'
-local coreRoot = os.getenv('QB_CORE_ROOT') or root .. '../qbcore'
+local coreRoot = os.getenv('QB_CORE_ROOT') or root .. '../kora_core'
 local callbacks, events, positions, players, payments, spawned = {}, {}, {}, {}, {}, {}
 local choice = 1
 local env = {}
@@ -20,7 +20,7 @@ env.QB = {
 assert(loadfile(coreRoot .. '/modules/util/shared.lua', 't', env))()
 assert(loadfile(coreRoot .. '/modules/player/server.lua', 't', env))()
 players = env.CoreInternal.player.bySource
-env.exports = { qbcore = {
+env.exports = { kora_core = {
     getPlayer = function(_, src) return env.Core.player.getPlayer(src) end,
     addMoney = function(_, src, account, amount)
         payments[#payments + 1] = { source = src, account = account, amount = amount }

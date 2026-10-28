@@ -22,7 +22,7 @@ local function nearGarage(vehicle)
 end
 
 local function roleFor(src)
-    local job = exports.qbcore:getJob(src)
+    local job = exports.kora_core:getJob(src)
     if not job then return nil end
     if Mechanic.roles.requireOnDuty and not job.onduty then return nil end
     return job
@@ -105,7 +105,7 @@ RegisterNetEvent('qbbusinesses:server:serviceCompleted', function(permitId, payl
 
     local cost = itemCost(permit.action)
     if cost then
-        local removed, err = exports.qbcore:removeItem(src, cost.item, cost.amount or 1, nil, 'vehicle service')
+        local removed, err = exports.kora_core:removeItem(src, cost.item, cost.amount or 1, nil, 'vehicle service')
         if not removed then return notify(src, ('Required item missing: %s.'):format(err or cost.item), 'error') end
     end
     TriggerClientEvent('qbbusinesses:client:serviceApplied', src, permit.action, permit.netId, payload)

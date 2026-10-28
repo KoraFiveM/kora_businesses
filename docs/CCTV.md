@@ -2,7 +2,7 @@
 
 ## What it is
 
-CCTV is a `qbbusinesses` job for installing and servicing business security
+CCTV is a `kora_businesses` job for installing and servicing business security
 systems. The CCTV company owns the installations it creates, while customer
 businesses pay for call-outs and repairs through society accounts.
 
@@ -49,7 +49,7 @@ from that player's bank account. Business requests use
 
 ## Hacking
 
-Hacking uses `qbskills` to adjust qblib's `hacking` minigame difficulty. The
+Hacking uses `kora_skills` to adjust kora_lib's `hacking` minigame difficulty. The
 server creates the authorization and consumes the proof, so clients cannot
 choose an easier puzzle or report a fake success.
 
@@ -64,16 +64,16 @@ The current test entry point is:
 
 ## Engineer laptop
 
-The `cctv_laptop` item is registered automatically by `qbbusinesses`.
+The `cctv_laptop` item is registered automatically by `kora_businesses`.
 
 When an eligible on-duty CCTV engineer uses it:
 
 1. The server validates the engineer's job, duty state, and grade.
 2. The server loads systems installed by the CCTV company.
-3. qblib AppShell opens `qbbusinesses:cctv-laptop`.
+3. kora_lib AppShell opens `qbbusinesses:cctv-laptop`.
 4. The engineer can view installed systems and service call-outs.
 
-The laptop uses qblib callbacks, notifications, and AppShell. It does not
+The laptop uses kora_lib callbacks, notifications, and AppShell. It does not
 trust client-supplied job or installation data.
 
 ## Emergency call-outs
@@ -110,7 +110,7 @@ qbbusinesses:cctv:completeCallout
 
 Completing a call-out charges the configured camera or NVR repair price. The
 call-out and repair amount are credited to the CCTV society account through
-`qbbanking`.
+`kora_banking`.
 
 ## Data and persistence
 
@@ -128,16 +128,16 @@ It creates tables for:
 Call-out data is currently held in memory during runtime and the schema is
 ready for full call-out hydration/persistence.
 
-## qblib integration
+## kora_lib integration
 
 The intended CCTV presentation layer uses:
 
 - `QB.camera` for live scripted CCTV views.
-- qblib placement tools for installing cameras.
-- qblib interactions/target integration for engineer actions.
+- kora_lib placement tools for installing cameras.
+- kora_lib interactions/target integration for engineer actions.
 - `QB.callback` for server-authoritative requests.
 - `QB.nui.registerApp` and `QB.nui.openApp` for AppShell.
-- qblib notifications and progress UI for field work.
+- kora_lib notifications and progress UI for field work.
 
 ## Current status
 

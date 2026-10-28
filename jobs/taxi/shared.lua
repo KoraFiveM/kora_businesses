@@ -190,7 +190,7 @@ Taxi = {
         'a_m_m_rurmeth_01',
     },
 }
--- Registers this resource-owned configuration with qblib.
+-- Registers this resource-owned configuration with kora_lib.
 if QB and QB.config and QB.config.adopt then
     local config = QB.config
     Taxi.jobRequired = config.string(Taxi.jobRequired, {

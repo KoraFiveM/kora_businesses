@@ -11,7 +11,7 @@ env = setmetatable({
         distance = { player = function(_, coords) return zone == coords end },
     },
     exports = {
-        qbinventory = { addItem = function() additions = additions + 1; return true end },
+        kora_inventory = { addItem = function() additions = additions + 1; return true end },
     },
     RegisterNetEvent = function(name, fn) events[name] = fn end,
     AddEventHandler = function(name, fn) hooks[name] = fn end,

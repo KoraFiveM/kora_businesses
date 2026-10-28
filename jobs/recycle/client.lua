@@ -161,7 +161,7 @@ local function Start()
         local model = Recycle.WarehouseObjects[v.model]
         props[k] = QB.entities.create(model, v.loc, {freeze = true, invincible = true})
         SetEntityHeading(props[k], 180.0)
-        exports.qbtarget:addEntity(props[k], {
+        exports.kora_target:addEntity(props[k], {
             {
                 label = QB.lang('recycle.text.get_package'),
                 icon = 'fas fa-box',
@@ -174,7 +174,7 @@ local function Start()
             },
         })
     end
-    exports.qbtarget:addBoxZone({
+    exports.kora_target:addBoxZone({
         coords = Recycle.OutsideLocation,
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {
@@ -186,7 +186,7 @@ local function Start()
             },
         }
     })
-    exports.qbtarget:addBoxZone({
+    exports.kora_target:addBoxZone({
         coords = Recycle.InsideLocation,
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {
@@ -198,7 +198,7 @@ local function Start()
             },
         }
     })
-    exports.qbtarget:addBoxZone({
+    exports.kora_target:addBoxZone({
         coords = Recycle.DutyLocation,
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {
@@ -210,7 +210,7 @@ local function Start()
             },
         }
     })
-    exports.qbtarget:addBoxZone({
+    exports.kora_target:addBoxZone({
         coords = Recycle.DropLocation,
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {

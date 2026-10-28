@@ -69,18 +69,18 @@ local function getItem(source, item, amount)
         if not checkStock(source, item, amount) then return end
         adjustStock(item, 'remove', amount)
     end
-    exports.qbinventory:addItem(source, item, amount)
+    exports.kora_inventory:addItem(source, item, amount)
 end
 
 local function sellMaterials(src, item, amount)
-    local has = exports.qbcore:getItemByName(src, item)
+    local has = exports.kora_core:getItemByName(src, item)
     if not has or has.amount <= 0 then return end
     amount = tonumber(amount)
     if not amount or amount ~= math.floor(amount) or amount <= 0 then return end
     amount = math.min(amount, has.amount, maxSell)
     local price = Sales[item] * amount
-    if not exports.qbinventory:removeItem(src, item, amount) then return end
-    exports.qbcore:addMoney(src, 'cash', price)
+    if not exports.kora_inventory:removeItem(src, item, amount) then return end
+    exports.kora_core:addMoney(src, 'cash', price)
     adjustStock(item, 'add', amount)
 end
 
@@ -121,7 +121,7 @@ RegisterNetEvent('qb-recyclejob:server:getItem', function()
 
     local luckyChance = math.random(1, 100)
     if luckyChance <= LuckyItemChance then
-        exports.qbinventory:addItem(src, luckyItem, 1)
+        exports.kora_inventory:addItem(src, luckyItem, 1)
     end
 end)
 

@@ -1,7 +1,7 @@
 local currentTaxis = {}
 
 local function taxiPlayer(source)
-    local player = exports.qbcore:getPlayer(source)
+    local player = exports.kora_core:getPlayer(source)
     if not player or not player.job or player.job.name ~= Taxi.jobRequired then
         return nil
     end
@@ -35,7 +35,7 @@ RegisterNetEvent('qb-taxi:dropOff', function()
     assert(QB.distance.player(source, currentTaxis[source].dropoff, 5.0), "Player is too far from the dropoff location")
     assert(currentTaxis[source].pickupComplete, "Pickup has not been completed yet")
     local pay = math.floor(currentTaxis[source].distance * 0.2)
-    exports.qbcore:addMoney(source, 'cash', pay)
+    exports.kora_core:addMoney(source, 'cash', pay)
     currentTaxis[source] = nil
     TriggerClientEvent('qb-taxi:client:spawnPickup', source)
 end)
