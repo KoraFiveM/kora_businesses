@@ -9,7 +9,17 @@ Recycle = {
 	DrawPackageLocationBlip = true,
 	PickupActionDuration    = math.random(4000, 6000),
 	DeliveryActionDuration  = 5000,
-	PickupBoxModel          = 'prop_cs_cardbox_01',
+	-- Carry prop shown in the player's hands between "Get Package" and "Hand In Package".
+	PickupBoxModel          = 'prop_cs_cardbox_01', -- any valid base-game (or streamed) prop model
+	CarryPropNetworked      = true,                 -- true: other players see the box; false: local-only prop
+	CarryBone               = 57005,                -- ped bone id: 57005 = right hand (28422 = right hand IK, 60309 = left hand)
+	CarryOffset             = vector3(0.05, 0.1, -0.3),        -- attach offset relative to the bone
+	CarryRotation           = vector3(300.0, 250.0, 20.0),     -- attach rotation relative to the bone
+	CarryAnim               = {                                -- carry pose; flag 49 = loop + upper body only, so the player can walk
+		dict = 'anim@heists@box_carry@',
+		clip = 'idle',
+		flag = 49,
+	},
 	PickupLocations         = {
 		{ model = math.random(1, 7), loc = vector4(1067.68, -3095.57, -39.9, 342.39), },
 		{ model = math.random(1, 7), loc = vector4(1065.20, -3095.57, -39.9, 342.39), },

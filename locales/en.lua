@@ -24,6 +24,7 @@ return {
             nothing_to_sell = "You Have Nothing To Sell",
             out_of_stock = "%s Is Out Of Stock",
             too_far_to_sell = "You Are Too Far Away To Sell",
+            carry_failed = "Could not pick up the package, try again",
         },
     },
     hotdog = {

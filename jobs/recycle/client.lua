@@ -1,6 +1,5 @@
-local carryBone = GetPedBoneIndex(PlayerPedId(), 57005)
-local carryPackage, packageCoords = nil, nil
-local onDuty, isBusy = false, false
+local carryPackage, packageCoords, carryPed = nil, nil, nil
+local onDuty, isBusy, handingIn = false, false, false
 local props = {}
 local progressConfig = {
     disable = {
@@ -14,6 +13,12 @@ local progressConfig = {
         flags = 17
     }
 }
+
+-- Carry animation comes from Recycle.CarryAnim (shared.lua), read at use time.
+local function carryAnim()
+    local anim = Recycle.CarryAnim or {}
+    return anim.dict or 'anim@heists@box_carry@', anim.clip or 'idle', anim.flag or 49
+end
 
 local function progressbar(label, time)
     return QB.progressbar.start({
@@ -35,9 +40,12 @@ AddEventHandler('onResourceStop', function(resourceName)
         DeleteObject(v)
     end
     if carryPackage then
+        DetachEntity(carryPackage, true, true)
         DeleteObject(carryPackage)
+        carryPackage = nil
+        ClearPedTasks(PlayerPedId())
     end
-    RemoveAnimDict('anim@heists@box_carry@')
+    RemoveAnimDict((carryAnim()))
 end)
 
 local function DrawPackageLocationBlip()
@@ -63,25 +71,63 @@ local function GetRandomPackage()
     DrawPackageLocationBlip()
 end
 
-local function PickupPackage()
-    local ped = PlayerPedId()
-    local pos = GetEntityCoords(ped, true)
-    QB.stream.loadModel(Recycle.PickupBoxModel)
-    QB.stream.loadAnimDict('anim@heists@box_carry@')
-    TaskPlayAnim(ped, 'anim@heists@box_carry@', 'idle', 5.0, -1, -1, 50, 0, false, false, false)
-    local object = CreateObject(Recycle.PickupBoxModel, pos.x, pos.y, pos.z, true, true, true)
-    SetModelAsNoLongerNeeded(Recycle.PickupBoxModel)
-    AttachEntityToEntity(object, ped, carryBone, 0.05, 0.1, -0.3, 300.0, 250.0, 20.0, true, true, false, true, 1, true)
-    carryPackage = object
-end
-
 local function DropPackage()
     if not carryPackage then return end
-    ClearPedTasks(PlayerPedId())
-    DetachEntity(carryPackage, true, true)
-    DeleteObject(carryPackage)
-    carryPackage = nil
-    RemoveAnimDict('anim@heists@box_carry@')
+    local object = carryPackage
+    carryPackage, carryPed = nil, nil
+    if not QB.cache.isDead() then ClearPedTasks(PlayerPedId()) end
+    if DoesEntityExist(object) then
+        DetachEntity(object, true, true)
+        DeleteObject(object)
+    end
+    RemoveAnimDict((carryAnim()))
+end
+
+-- Releases the box when the carrier dies, switches ped (character swap) or the prop vanishes,
+-- and re-applies the carry pose if something (vehicle, ragdoll) knocked it off.
+local function watchCarry(object)
+    CreateThread(function()
+        while carryPackage == object do
+            Wait(500)
+            if carryPackage ~= object then break end
+            local ped = PlayerPedId()
+            if ped ~= carryPed or QB.cache.isDead() or not DoesEntityExist(object) then
+                DropPackage()
+                TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+                if onDuty and not packageCoords then GetRandomPackage() end
+                break
+            end
+            local dict, clip, flag = carryAnim()
+            if not handingIn and not isBusy and not IsEntityPlayingAnim(ped, dict, clip, 3) and HasAnimDictLoaded(dict) then
+                TaskPlayAnim(ped, dict, clip, 5.0, -1, -1, flag, 0, false, false, false)
+            end
+        end
+    end)
+end
+
+-- Returns true once the box is attached to the player's hand.
+local function PickupPackage()
+    local ped = PlayerPedId()
+    local dict, clip, flag = carryAnim()
+    local loaded, model = pcall(QB.stream.loadModel, Recycle.PickupBoxModel)
+    if not loaded or not model then return false end
+    local pos = GetEntityCoords(ped, true)
+    -- Not a door object (last arg false) and not a mission entity: the old call passed true for all three.
+    local object = CreateObject(model, pos.x, pos.y, pos.z, Recycle.CarryPropNetworked ~= false, false, false)
+    SetModelAsNoLongerNeeded(model)
+    if not object or object == 0 or not DoesEntityExist(object) then return false end
+    -- Bone index is resolved against the current ped: it is skeleton specific and changes after a ped/character swap.
+    local boneIndex = GetPedBoneIndex(ped, Recycle.CarryBone or 57005)
+    local offset = Recycle.CarryOffset or vector3(0.05, 0.1, -0.3)
+    local rotation = Recycle.CarryRotation or vector3(300.0, 250.0, 20.0)
+    AttachEntityToEntity(object, ped, boneIndex, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z, true, true, false, true, 1, true)
+    carryPackage, carryPed = object, ped
+    local animLoaded, dictReady = pcall(QB.stream.loadAnimDict, dict)
+    if animLoaded and dictReady then
+        TaskPlayAnim(ped, dict, clip, 5.0, -1, -1, flag, 0, false, false, false)
+    end
+    watchCarry(object)
+    return true
 end
 
 local function SetLocationBlip()
@@ -141,15 +187,21 @@ local function pickUp()
         TriggerServerEvent('qb-recyclejob:server:cancelPickup')
         return
     end
+    if not PickupPackage() then
+        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+        QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.error.carry_failed'), type = 'error' })
+        return
+    end
     if props[packageCoords] then
         SetEntityDrawOutline(props[packageCoords], false)
     end
     packageCoords = nil
-    PickupPackage()
 end
 
 local function handInPackage()
+    handingIn = true
     local success = progressbar(QB.lang('recycle.text.unpacking_the_package'), Recycle.DeliveryActionDuration)
+    handingIn = false
     if not success then return end
     DropPackage()
     TriggerServerEvent('qb-recyclejob:server:getItem')
