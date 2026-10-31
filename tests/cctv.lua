@@ -5,7 +5,7 @@ local function noop() end
 local handlers, threads, buckets, notices, clock = {}, {}, { [1] = 42 }, {}, 0
 local env = setmetatable({
     Globals = {},
-    QB = {
+    Kora = {
         shared = { get = function() return true end },
         callback = { register = function(name, fn) callbacks[name] = fn end },
         sql = { query = function() reads = reads + 1; return {} end },
@@ -32,8 +32,8 @@ local env = setmetatable({
 assert(loadfile(root .. 'jobs/cctv/shared.lua', 't', env))()
 env.Cctv.minimumEngineerGrade = 2
 assert(loadfile(root .. 'jobs/cctv/server.lua', 't', env))()
-env.QB.sql.ready = function() return true end
-env.QB.sql.migrateFiles = function(resource, migrations)
+env.Kora.sql.ready = function() return true end
+env.Kora.sql.migrateFiles = function(resource, migrations)
     assert(resource == 'kora_businesses' and migrations[1].version == 2)
     assert(migrations[1].name == 'cctv_callouts' and migrations[1].file == 'sql/001_cctv_callouts.sql')
     assert(io.open(root .. migrations[1].file, 'r')):close()
@@ -64,11 +64,11 @@ env.Cctv.requireOnDuty = false
 job = { name = 'cctv', onduty = false, grade = { level = 2 } }
 assert(callbacks['qbbusinesses:cctv:completeCallout'](1, 'test') == true)
 assert(callout.status == 'completed' and charges == 1)
-env.QB.sql.single = function() return nil end
-env.QB.sql.update = function() return true end
-env.QB.minigames = { authorizeSkillCheck = function() return 'authorization' end, consumeProof = function() return true end }
-env.QB.skills = { get = function() return { level = 10 } end }
-env.QB.notify = { send = noop }
+env.Kora.sql.single = function() return nil end
+env.Kora.sql.update = function() return true end
+env.Kora.minigames = { authorizeSkillCheck = function() return 'authorization' end, consumeProof = function() return true end }
+env.Kora.skills = { get = function() return { level = 10 } end }
+env.Kora.notify = { send = noop }
 local function noticed(bucket)
     assert(#notices == 1 and notices[1].src == 1 and notices[1].bucket == bucket, 'exact notice must follow the raw bucket native')
     assert(buckets[1] == bucket)

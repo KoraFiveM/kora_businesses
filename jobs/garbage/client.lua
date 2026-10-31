@@ -15,7 +15,7 @@ local BAG_MODEL = `hei_prop_heist_binbag`
 
 local function removeBlips()
     for _, blip in pairs(blips) do
-        QB.blips.remove(blip)
+        Kora.blips.remove(blip)
     end
     blips = {}
 end
@@ -39,14 +39,14 @@ end
 
 local function createStopBlip(stopId)
     if blips.stop then
-        QB.blips.remove(blips.stop)
+        Kora.blips.remove(blips.stop)
         blips.stop = nil
     end
 
     local stop = Garbage.Locations.trashcan[stopId]
     if not stop then return end
 
-    blips.stop = QB.blips.create(stop.coords, {
+    blips.stop = Kora.blips.create(stop.coords, {
         label = ('Garbage Stop %s'):format(stopId),
         sprite = 318,
         color = 5,
@@ -61,7 +61,7 @@ local function attachBag()
 
     local ped = PlayerPedId()
 
-    if not QB.stream.loadModel(BAG_MODEL) then return false end
+    if not Kora.stream.loadModel(BAG_MODEL) then return false end
 
     local coords = GetEntityCoords(ped)
     garbage.bagObject = CreateObject(BAG_MODEL, coords.x, coords.y, coords.z, true, true, false)
@@ -86,7 +86,7 @@ local function removeCurrentStop()
     removeStopZone()
 
     if blips.stop then
-        QB.blips.remove(blips.stop)
+        Kora.blips.remove(blips.stop)
         blips.stop = nil
     end
 end
@@ -115,7 +115,7 @@ local function setupStop(stopId, bagsRequired)
                     end
 
                     if garbage.bagObject then
-                        QB.notify.send({
+                        Kora.notify.send({
                             title = 'Garbage',
                             message = 'You are already carrying a bag.',
                             type = 'warning',
@@ -127,7 +127,7 @@ local function setupStop(stopId, bagsRequired)
                         return
                     end
 
-                    local ok = QB.callback.trigger('qb-garbagejob:collectBag', stopId)
+                    local ok = Kora.callback.trigger('qb-garbagejob:collectBag', stopId)
                     if not ok then
                         clearBag()
                         return
@@ -158,7 +158,7 @@ local function addTruckTarget()
             label = 'Throw Trash Bag',
             onSelect = function()
                 if not garbage.bagObject then
-                    QB.notify.send({
+                    Kora.notify.send({
                         title = 'Garbage',
                         message = 'You are not carrying a trash bag.',
                         type = 'warning',
@@ -166,7 +166,7 @@ local function addTruckTarget()
                     return
                 end
 
-                local ok = QB.callback.trigger('qb-garbagejob:depositBag', garbage.route[garbage.routeIndex].stop)
+                local ok = Kora.callback.trigger('qb-garbagejob:depositBag', garbage.route[garbage.routeIndex].stop)
                 if not ok then return end
 
                 local ped = PlayerPedId()
@@ -181,7 +181,7 @@ local function addTruckTarget()
                 garbage.bags -= 1
 
                 if garbage.bags == 0 and garbage.collectedForStop >= garbage.bagsRequired then
-                    local complete = QB.callback.trigger(
+                    local complete = Kora.callback.trigger(
                         'qb-garbagejob:completeStop',
                         garbage.routeIndex
                     )
@@ -193,13 +193,13 @@ local function addTruckTarget()
                         local nextStop = garbage.route and garbage.route[garbage.routeIndex]
                         if nextStop then
                             setupStop(nextStop.stop, nextStop.bags)
-                            QB.notify.send({
+                            Kora.notify.send({
                                 title = 'Garbage',
                                 message = 'Stop completed. Continue to the next stop.',
                                 type = 'success',
                             })
                         else
-                            QB.notify.send({
+                            Kora.notify.send({
                                 title = 'Garbage',
                                 message = ('All %s stops are complete. Return the truck to the depot.'):format(#garbage.route),
                                 type = 'success',
@@ -219,7 +219,7 @@ local function addTruckTarget()
             label = 'Return Garbage Truck',
             onSelect = function()
                 if not garbage.route or garbage.route[garbage.routeIndex] then
-                    QB.notify.send({
+                    Kora.notify.send({
                         title = 'Garbage',
                         message = 'Finish all of your stops before returning the truck.',
                         type = 'warning',
@@ -229,7 +229,7 @@ local function addTruckTarget()
 
                 local coords = GetEntityCoords(garbage.truck)
                 if #(coords - Garbage.Locations.main) > Garbage.ReturnDistance then
-                    QB.notify.send({
+                    Kora.notify.send({
                         title = 'Garbage',
                         message = 'You need to bring the truck back to the depot.',
                         type = 'warning',
@@ -237,7 +237,7 @@ local function addTruckTarget()
                     return
                 end
 
-                local returned = QB.callback.trigger('qb-garbagejob:returnTruck', VehToNet(garbage.truck))
+                local returned = Kora.callback.trigger('qb-garbagejob:returnTruck', VehToNet(garbage.truck))
                 if not returned then return end
 
                 removeCurrentStop()
@@ -272,9 +272,9 @@ local function spawnTruck()
     if playerData.job.name ~= 'garbage' then return end
     if garbage.truck then return end
 
-    local route = QB.callback.trigger('qb-garbagejob:spawnTruck')
+    local route = Kora.callback.trigger('qb-garbagejob:spawnTruck')
     if not route then
-        QB.notify.send({
+        Kora.notify.send({
             title = 'Garbage',
             message = 'You are already on a garbage route.',
             type = 'error',
@@ -285,7 +285,7 @@ local function spawnTruck()
     local spawn = Garbage.Locations.vehicle[math.random(1, #Garbage.Locations.vehicle)].coords
     local model = Garbage.Vehicle
 
-    QB.stream.loadModel(model)
+    Kora.stream.loadModel(model)
 
     garbage.truck = CreateVehicle(model, spawn.x, spawn.y, spawn.z, spawn.w, true, true)
     SetVehicleNumberPlateText(garbage.truck, 'GARBAGE')
@@ -293,13 +293,13 @@ local function spawnTruck()
     SetEntityAsMissionEntity(garbage.truck, true, true)
     SetModelAsNoLongerNeeded(model)
 
-    if not QB.callback.trigger('qb-garbagejob:setTruck', VehToNet(garbage.truck)) then
-        QB.callback.trigger('qb-garbagejob:cancel')
+    if not Kora.callback.trigger('qb-garbagejob:setTruck', VehToNet(garbage.truck)) then
+        Kora.callback.trigger('qb-garbagejob:cancel')
         if DoesEntityExist(garbage.truck) then
             DeleteVehicle(garbage.truck)
         end
         garbage.truck = nil
-        QB.notify.send({
+        Kora.notify.send({
             title = 'Garbage',
             message = 'Unable to start the route. Please try again.',
             type = 'error',
@@ -318,7 +318,7 @@ local function spawnTruck()
     setupStop(firstStop.stop, firstStop.bags)
     addTruckTarget()
 
-    QB.notify.send({
+    Kora.notify.send({
         title = 'Garbage',
         message = 'Your truck is ready. Follow the route to the first stop.',
         type = 'success',
@@ -327,7 +327,7 @@ end
 
 local function setUpPed()
     for _, pedData in pairs(Garbage.Peds) do
-        local ped = QB.entities.create(pedData.model, pedData.coords, {
+        local ped = Kora.entities.create(pedData.model, pedData.coords, {
             freeze = true,
             invincible = true,
             blockNonTempEvents = true,
@@ -354,7 +354,7 @@ local function createDepotBlip()
     if blips.depot then return end
 
     for _, blipData in pairs(Garbage.BlipData) do
-        blips.depot = QB.blips.create(blipData.coords, {
+        blips.depot = Kora.blips.create(blipData.coords, {
             label = blipData.label,
             sprite = blipData.sprite,
             color = blipData.color,
@@ -371,7 +371,7 @@ AddEventHandler('QBCore:Client:OnJobUpdate', function(job)
     end
 
     if garbage.truck then
-        QB.callback.trigger('qb-garbagejob:cancel')
+        Kora.callback.trigger('qb-garbagejob:cancel')
         removeCurrentStop()
         clearBag()
 

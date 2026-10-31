@@ -43,7 +43,7 @@ local QUALITY_META = {
 
 
 local function notify(message, notifyType)
-    QB.notify.send({ message = message, type = notifyType or 'info' })
+    Kora.notify.send({ message = message, type = notifyType or 'info' })
 end
 
 
@@ -121,10 +121,10 @@ local function buildStockNav()
 end
 
 local function refreshUI()
-    QB.nui.updateApp(STOCK_APP_ID, { navigation = buildStockNav() })
+    Kora.nui.updateApp(STOCK_APP_ID, { navigation = buildStockNav() })
 end
 
-QB.nui.registerApp({
+Kora.nui.registerApp({
     id = STOCK_APP_ID,
     title = 'Hot Dog Cart',
     description = 'Your current stock',
@@ -136,24 +136,24 @@ QB.nui.registerApp({
 
 local function openStockApp()
     CreateThread(function()
-        QB.nui.openApp(STOCK_APP_ID)
+        Kora.nui.openApp(STOCK_APP_ID)
     end)
 end
 
 local function updateBlip()
     if hotdogBlip then
-        QB.blips.remove(hotdogBlip)
+        Kora.blips.remove(hotdogBlip)
         hotdogBlip = nil
     end
 
     if isHotdogJob() then
-        hotdogBlip = QB.blips.create(Hotdog.Locations['take'].coords, {
+        hotdogBlip = Kora.blips.create(Hotdog.Locations['take'].coords, {
             sprite = 542,
             color = 17,
             scale = 0.6,
             shortRange = true,
             category = 'Restaurant',
-            name = QB.lang('hotdog.info.blip_name'),
+            name = Kora.lang('hotdog.info.blip_name'),
         }) or nil
     end
 end
@@ -176,7 +176,7 @@ end
 
 local function removeCustomerTarget()
     if selling.targetId and selling.targetPed then
-        QB.interact.removeEntity(selling.targetPed, selling.targetId)
+        Kora.interact.removeEntity(selling.targetPed, selling.targetId)
     end
     selling.targetId = nil
     selling.targetPed = nil
@@ -205,7 +205,7 @@ local function offerRange(quality, amount)
 end
 
 local function findCustomer()
-    local nearby = QB.world.getNearbyEntities('ped', standSpot(), 15.0, { excludeEntities = selling.recentPeds })
+    local nearby = Kora.world.getNearbyEntities('ped', standSpot(), 15.0, { excludeEntities = selling.recentPeds })
     for i = 1, #nearby do
         local ped = nearby[i].entity
         if not IsPedAPlayer(ped) and not IsPedInAnyVehicle(ped, false) and not IsPedDeadOrDying(ped, true) then
@@ -216,15 +216,15 @@ local function findCustomer()
 end
 
 local function handOverHotdog()
-    local ped = QB.cache.ped()
-    QB.anim.play(ped, 'mp_arresting', 'a_uncuff', { duration = 500, flag = 48 })
+    local ped = Kora.cache.ped()
+    Kora.anim.play(ped, 'mp_arresting', 'a_uncuff', { duration = 500, flag = 48 })
 end
 
 local function completeSale(ped, quality, amount)
     stock[quality] = stock[quality] - amount
     refreshUI()
 
-    local result, reason = QB.callback.trigger('qb-hotdogjob:sell', NetworkGetNetworkIdFromEntity(ped), quality, amount)
+    local result, reason = Kora.callback.trigger('qb-hotdogjob:sell', NetworkGetNetworkIdFromEntity(ped), quality, amount)
     if not result then
         if reason then
             stock[quality] = 0
@@ -237,14 +237,14 @@ local function completeSale(ped, quality, amount)
         return
     end
 
-    notify(QB.lang('hotdog.success.sold_hotdogs', result.amount, result.total), 'success')
+    notify(Kora.lang('hotdog.success.sold_hotdogs', result.amount, result.total), 'success')
     handOverHotdog()
     releaseCustomer(ped, false)
 end
 
 local function declineOffer(ped)
     if selling.target ~= ped then return end
-    notify(QB.lang('hotdog.error.cust_refused'), 'error')
+    notify(Kora.lang('hotdog.error.cust_refused'), 'error')
     selling.hasTarget = false
     selling.target = nil
     removeCustomerTarget()
@@ -254,9 +254,9 @@ end
 
 local function acceptOffer(ped, quality, amount)
     if selling.target ~= ped or not selling.hasTarget then return end
-    if #(GetEntityCoords(QB.cache.ped()) - GetEntityCoords(ped)) > Hotdog.SaleDistance then
+    if #(GetEntityCoords(Kora.cache.ped()) - GetEntityCoords(ped)) > Hotdog.SaleDistance then
         declineOffer(ped)
-        notify(QB.lang('hotdog.error.too_far'), 'error')
+        notify(Kora.lang('hotdog.error.too_far'), 'error')
         return
     end
     selling.hasTarget = false
@@ -268,10 +268,10 @@ end
 
 local function addCustomerTarget(ped, quality, amount, range)
     selling.targetPed = ped
-    selling.targetId = QB.interact.addEntity(ped, {
+    selling.targetId = Kora.interact.addEntity(ped, {
         {
             icon = 'fas fa-hand-holding-dollar',
-            label = QB.lang('hotdog.info.sell_dogs_target', amount, range),
+            label = Kora.lang('hotdog.info.sell_dogs_target', amount, range),
             action = function()
                 CreateThread(function() acceptOffer(ped, quality, amount) end)
             end,
@@ -288,7 +288,7 @@ local function sellToPed(ped)
     local quality = pickHotdog()
     if not quality then
         stopSelling()
-        notify(QB.lang('hotdog.error.no_dogs'), 'error')
+        notify(Kora.lang('hotdog.error.no_dogs'), 'error')
         return
     end
     local amount = math.random(1, math.min(3, stock[quality]))
@@ -311,10 +311,10 @@ local function sellToPed(ped)
         end
 
         spot = standSpot()
-        if #(GetEntityCoords(QB.cache.ped()) - spot) > 10.0 then
+        if #(GetEntityCoords(Kora.cache.ped()) - spot) > 10.0 then
             releaseCustomer(ped, true)
             stopSelling()
-            notify(QB.lang('hotdog.error.too_far'), 'error')
+            notify(Kora.lang('hotdog.error.too_far'), 'error')
             return
         end
 
@@ -323,23 +323,23 @@ local function sellToPed(ped)
         Wait(100)
     end
 
-    local playerPed = QB.cache.ped()
+    local playerPed = Kora.cache.ped()
     FreezeEntityPosition(ped, true)
     TaskLookAtEntity(ped, playerPed, 5500.0, 2048, 3)
     TaskTurnPedToFaceEntity(ped, playerPed, 5500)
     SetEntityHeading(ped, GetEntityHeading(playerPed) + 180.0)
-    QB.anim.playScenario(ped, 'WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT')
+    Kora.anim.playScenario(ped, 'WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT')
     selling.target = ped
 
     local range = offerRange(quality, amount)
     addCustomerTarget(ped, quality, amount, range)
 
     while selling.enabled and selling.hasTarget and selling.target == ped and standExists() do
-        if #(GetEntityCoords(QB.cache.ped()) - standSpot()) >= 4.0 then
+        if #(GetEntityCoords(Kora.cache.ped()) - standSpot()) >= 4.0 then
             removeCustomerTarget()
             releaseCustomer(ped, true)
             stopSelling()
-            notify(QB.lang('hotdog.error.too_far'), 'error')
+            notify(Kora.lang('hotdog.error.too_far'), 'error')
             return
         end
 
@@ -351,11 +351,11 @@ end
 
 local function startSelling()
     if not standExists() then
-        notify(QB.lang('hotdog.error.no_stand'), 'error')
+        notify(Kora.lang('hotdog.error.no_stand'), 'error')
         return
     end
-    if #(GetEntityCoords(QB.cache.ped()) - GetEntityCoords(standObject)) >= 5.0 then
-        notify(QB.lang('hotdog.error.too_far'), 'error')
+    if #(GetEntityCoords(Kora.cache.ped()) - GetEntityCoords(standObject)) >= 5.0 then
+        notify(Kora.lang('hotdog.error.too_far'), 'error')
         return
     end
 
@@ -392,12 +392,12 @@ local function letGoOfStand()
     isPushing = false
 
     if pushPromptId then
-        QB.textui.hide(pushPromptId)
+        Kora.textui.hide(pushPromptId)
         pushPromptId = nil
     end
 
     if pushLease then
-        QB.controls.release(pushLease)
+        Kora.controls.release(pushLease)
         pushLease = nil
     end
 
@@ -405,17 +405,17 @@ local function letGoOfStand()
         DetachEntity(standObject, false, false)
         SetEntityCollision(standObject, true, true)
     end
-    QB.anim.clear(QB.cache.ped())
+    Kora.anim.clear(Kora.cache.ped())
 end
 
 local function keepPushAnimation()
-    pushPromptId = QB.textui.show('[G] To let go of the stand')
+    pushPromptId = Kora.textui.show('[G] To let go of the stand')
 
     CreateThread(function()
         while isPushing do
-            local ped = QB.cache.ped()
-            if not QB.anim.isPlaying(ped) then
-                QB.anim.play(ped, pushAnim.dict, pushAnim.clip, { flag = 50 })
+            local ped = Kora.cache.ped()
+            if not Kora.anim.isPlaying(ped) then
+                Kora.anim.play(ped, pushAnim.dict, pushAnim.clip, { flag = 50 })
             end
             Wait(1000)
         end
@@ -425,11 +425,11 @@ end
 local function takeStand()
     if isPushing or not standExists() then return end
 
-    local ped = QB.cache.ped()
+    local ped = Kora.cache.ped()
     isPushing = true
-    QB.entities.requestControl(standObject)
-    QB.anim.play(ped, pushAnim.dict, pushAnim.clip, { flag = 50 })
-    pushLease = QB.controls.acquire(pushBlockedControls)
+    Kora.entities.requestControl(standObject)
+    Kora.anim.play(ped, pushAnim.dict, pushAnim.clip, { flag = 50 })
+    pushLease = Kora.controls.acquire(pushBlockedControls)
 
     SetTimeout(150, function()
         if isPushing and standExists() then
@@ -455,15 +455,15 @@ local function shouldDropStand(ped)
         end
     end
 
-    return IsPedShooting(ped) or IsPlayerFreeAiming(QB.cache.playerId())
-        or IsPedInMeleeCombat(ped) or QB.cache.isDead() or IsPedRagdoll(ped)
+    return IsPedShooting(ped) or IsPlayerFreeAiming(Kora.cache.playerId())
+        or IsPedInMeleeCombat(ped) or Kora.cache.isDead() or IsPedRagdoll(ped)
 end
 
 local function watchStandHandling(run)
     CreateThread(function()
         while isWorking and workRun == run do
             if isPushing then
-                if shouldDropStand(QB.cache.ped()) then
+                if shouldDropStand(Kora.cache.ped()) then
                     letGoOfStand()
                 end
                 Wait(5)
@@ -476,18 +476,18 @@ end
 
 
 local function startPrepareAnim()
-    TaskStartScenarioInPlace(QB.cache.ped(), 'PROP_HUMAN_BBQ', 0, true)
+    TaskStartScenarioInPlace(Kora.cache.ped(), 'PROP_HUMAN_BBQ', 0, true)
 end
 
 local function stopPrepareAnim()
-    ClearPedTasks(QB.cache.ped())
+    ClearPedTasks(Kora.cache.ped())
 end
 
 local function prepareHotdog()
     if not isWorking or isPushing or isPreparing then return end
     isPreparing = true
 
-    local begun, beginReason = QB.callback.trigger('qb-hotdogjob:beginPreparing')
+    local begun, beginReason = Kora.callback.trigger('qb-hotdogjob:beginPreparing')
     if type(begun) ~= 'table' or type(begun.authorization) ~= 'string' then
         isPreparing = false
         notify(beginReason or genericError, 'error')
@@ -495,14 +495,14 @@ local function prepareHotdog()
     end
 
     startPrepareAnim()
-    local played, result = pcall(QB.minigames.play, 'keys', nil, begun.authorization)
+    local played, result = pcall(Kora.minigames.play, 'keys', nil, begun.authorization)
     isPreparing = false
     stopPrepareAnim()
 
     local cancelled = played and type(result) == 'table' and result.cancelled == true
     local proof = played and type(result) == 'table' and result.success and result.proof or false
 
-    local reward, reason = QB.callback.trigger('qb-hotdogjob:finishPreparing', proof, begun.authorization)
+    local reward, reason = Kora.callback.trigger('qb-hotdogjob:finishPreparing', proof, begun.authorization)
     if not reward then
         if not cancelled then notify(reason or genericError, 'error') end
         return
@@ -510,20 +510,20 @@ local function prepareHotdog()
 
     stock[reward.quality] = (stock[reward.quality] or 0) + reward.amount
     if reward.amount == 0 then
-        notify(QB.lang('hotdog.error.no_more', reward.label), 'error')
+        notify(Kora.lang('hotdog.error.no_more', reward.label), 'error')
     elseif reward.amount > 1 then
-        notify(QB.lang('hotdog.success.made_luck_hotdog', reward.amount, reward.label), 'success')
+        notify(Kora.lang('hotdog.success.made_luck_hotdog', reward.amount, reward.label), 'success')
     else
-        notify(QB.lang('hotdog.success.made_hotdog', reward.label), 'success')
+        notify(Kora.lang('hotdog.success.made_hotdog', reward.label), 'success')
     end
     refreshUI()
 end
 
 local function addStandTarget()
-    standTargetId = QB.interact.addEntity(standObject, {
+    standTargetId = Kora.interact.addEntity(standObject, {
         {
             icon = 'fas fa-hand',
-            label = QB.lang('hotdog.info.grab'),
+            label = Kora.lang('hotdog.info.grab'),
             canInteract = function() return isWorking end,
             action = function()
                 CreateThread(function()
@@ -533,13 +533,13 @@ local function addStandTarget()
         },
         {
             icon = 'fas fa-hotdog',
-            label = QB.lang('hotdog.info.prepare'),
+            label = Kora.lang('hotdog.info.prepare'),
             canInteract = function() return isWorking and not isPushing end,
             action = function() CreateThread(prepareHotdog) end,
         },
         {
             icon = 'fas fa-hand-holding-usd',
-            label = QB.lang('hotdog.info.toggle_sell'),
+            label = Kora.lang('hotdog.info.toggle_sell'),
             canInteract = function() return isWorking end,
             action = toggleSelling,
         },
@@ -557,25 +557,25 @@ local function teardownStand()
     letGoOfStand()
 
     if standTargetId and standObject then
-        QB.interact.removeEntity(standObject, standTargetId)
+        Kora.interact.removeEntity(standObject, standTargetId)
     end
     standTargetId = nil
 
-    if standExists() then QB.entities.delete(standObject) end
+    if standExists() then Kora.entities.delete(standObject) end
     standObject = nil
 
-    QB.anim.clear(QB.cache.ped(), true)
+    Kora.anim.clear(Kora.cache.ped(), true)
     isWorking = false
     isPushing = false
     resetStock()
     refreshUI()
-    if QB.nui.isAppOpen(STOCK_APP_ID) then QB.nui.closeApp(STOCK_APP_ID) end
+    if Kora.nui.isAppOpen(STOCK_APP_ID) then Kora.nui.closeApp(STOCK_APP_ID) end
 end
 
 local function spawnStand()
     local spawn = Hotdog.Locations['spawn'].coords
 
-    local ok, loaded = pcall(QB.stream.loadModel, standModel, function(hash)
+    local ok, loaded = pcall(Kora.stream.loadModel, standModel, function(hash)
         standObject = CreateObject(hash, spawn.x, spawn.y, spawn.z, true, false, false)
     end)
 
@@ -593,14 +593,14 @@ end
 local function startWorking()
     if isWorking then return end
 
-    local started, reason = QB.callback.trigger('qb-hotdogjob:startWorking')
+    local started, reason = Kora.callback.trigger('qb-hotdogjob:startWorking')
     if not started then
         notify(reason or genericError, 'error')
         return
     end
 
     if not spawnStand() then
-        QB.callback.trigger('qb-hotdogjob:stopWorking')
+        Kora.callback.trigger('qb-hotdogjob:stopWorking')
         notify(genericError, 'error')
         return
     end
@@ -613,22 +613,22 @@ local function startWorking()
     watchStandHandling(workRun)
 
     refreshUI()
-    notify(QB.lang('hotdog.success.deposit', Hotdog.StandDeposit), 'success')
+    notify(Kora.lang('hotdog.success.deposit', Hotdog.StandDeposit), 'success')
 end
 
 local function stopWorking()
     if not isWorking then return end
 
     if not standExists() then
-        notify(QB.lang('hotdog.error.no_stand_found'), 'error')
+        notify(Kora.lang('hotdog.error.no_stand_found'), 'error')
         teardownStand()
         return
     end
 
-    local stopped, reason = QB.callback.trigger('qb-hotdogjob:stopWorking')
+    local stopped, reason = Kora.callback.trigger('qb-hotdogjob:stopWorking')
     if stopped then
         teardownStand()
-        notify(QB.lang('hotdog.success.deposit_returned', Hotdog.StandDeposit), 'success')
+        notify(Kora.lang('hotdog.success.deposit_returned', Hotdog.StandDeposit), 'success')
     elseif reason then
         teardownStand()
         notify(reason, 'error')
@@ -674,18 +674,18 @@ end)
 RegisterNetEvent('qb-hotdogjob:client:ToggleSell', toggleSelling)
 
 RegisterNetEvent('qb-hotdogjob:staff:DeletStand', function()
-    local pos = GetEntityCoords(QB.cache.ped())
-    local object, _, distance = QB.world.getClosestEntity('object', pos, { radius = 10.0, models = { standModel } })
+    local pos = GetEntityCoords(Kora.cache.ped())
+    local object, _, distance = Kora.world.getClosestEntity('object', pos, { radius = 10.0, models = { standModel } })
 
     if object and distance <= 5.0 then
-        QB.entities.delete(object)
-        notify(QB.lang('hotdog.info.admin_removed'), 'info')
+        Kora.entities.delete(object)
+        notify(Kora.lang('hotdog.info.admin_removed'), 'info')
     end
 end)
 
-QB.keybind.add({
+Kora.keybind.add({
     name = 'letgostand',
-    description = QB.lang('hotdog.keymapping.gkey'),
+    description = Kora.lang('hotdog.keymapping.gkey'),
     defaultKey = 'G',
     onPressed = function() letGoOfStand() end,
 })
@@ -694,17 +694,17 @@ CreateThread(function()
     local take = Hotdog.Locations['take'].coords
     local center = vector3(take.x, take.y, take.z)
 
-    QB.interact.addBoxZone('hotdog_start', center, vector4(1.0, 1.0, 2.0, take.w), {
+    Kora.interact.addBoxZone('hotdog_start', center, vector4(1.0, 1.0, 2.0, take.w), {
             {
                 icon = 'fa-solid fa-hotdog',
-                label = QB.lang('hotdog.info.start_work'),
+                label = Kora.lang('hotdog.info.start_work'),
                 job = 'hotdog',
                 canInteract = function() return not isWorking end,
                 action = function() CreateThread(toggleWork) end,
             },
             {
                 icon = 'fa-solid fa-hotdog',
-                label = QB.lang('hotdog.info.stop_work'),
+                label = Kora.lang('hotdog.info.stop_work'),
                 job = 'hotdog',
                 canInteract = function() return isWorking end,
                 action = function() CreateThread(toggleWork) end,

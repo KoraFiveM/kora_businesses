@@ -22,11 +22,11 @@ end
 local function setUpPickup(data)
     local indexed = Tow.Locations.towspots[data.location]
     local vehicle, loc = indexed.model, indexed.coords
-    QB.stream.loadModel(vehicle)
+    Kora.stream.loadModel(vehicle)
     pickupVeh = CreateVehicle(vehicle, loc, 0.0, true, true)
     SetModelAsNoLongerNeeded(vehicle)
     pickupBlip = AddBlipForEntity(pickupVeh)
-    QB.notify.send({
+    Kora.notify.send({
         title = 'Tow Job',
         message = 'New tow vehicle marked on your map',
         type = 'success'
@@ -45,13 +45,13 @@ local function setUpPickup(data)
                 label = "Tow Vehicle",
                 icon = "fas fa-car",
                 onSelect = function()
-                    local confirm = QB.callback.trigger("qb-tow:server:pickUp")
+                    local confirm = Kora.callback.trigger("qb-tow:server:pickUp")
                     if not confirm then
                         return
                     end
                     AttachEntityToEntity(pickupVeh, veh, GetEntityBoneIndexByName(veh, 'bodyshell'), 0.0, -1.5 + -0.85, 0.0 + 1.15, 0, 0, 0, 1, 1, 0, 1, 0, 1)
                     towAttached = true
-                    QB.notify.send({
+                    Kora.notify.send({
                         title = 'Tow Job',
                         message = 'Head Back To The Tow Yard',
                         type = 'success'
@@ -66,12 +66,12 @@ local function setUpPickup(data)
                 icon = "fas fa-car",
                 onSelect = function()
                     DetachEntity(pickupVeh, true, true)
-                    local coords = QB.raycast.getCoords({type = 'object',object = GetEntityModel(pickupVeh)})
+                    local coords = Kora.raycast.getCoords({type = 'object',object = GetEntityModel(pickupVeh)})
                     if coords and coords.coords then
                         SetEntityCoords(pickupVeh, coords.coords.x, coords.coords.y, coords.coords.z)
                         SetEntityHeading(pickupVeh, coords.coords.h or 180.0)
                         reset()
-                        local data = QB.callback.trigger("qb-tow:server:DropOff")
+                        local data = Kora.callback.trigger("qb-tow:server:DropOff")
                         if data then
                             reset()
                             setUpPickup(data)
@@ -85,16 +85,16 @@ local function setUpPickup(data)
     })
 end
 
-QB.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3, 3), {
+Kora.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3, 3), {
     {
         label = 'Pull Out Vehicle',
         icon = "fas fa-car",
         action = function()
-            local data = QB.callback.trigger("qb-tow:server:TakeOutVehicle")
+            local data = Kora.callback.trigger("qb-tow:server:TakeOutVehicle")
             if not data then
                 return
             end
-            QB.stream.loadModel(Tow.Vehicles)
+            Kora.stream.loadModel(Tow.Vehicles)
             veh = CreateVehicle(Tow.Vehicles, Tow.Locations.vehicle.spawncoords, Tow.Locations.vehicle.coords.h or 180.0, true, true)
             SetModelAsNoLongerNeeded(Tow.Vehicles)
             SetEntityHeading(veh, Tow.Locations.vehicle.coords.h or 180.0)
@@ -113,7 +113,7 @@ QB.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3, 
         label = 'Detach Vehicle',
         icon = "fas fa-car",
         action = function()
-            local checkDist = QB.callback.trigger("qb-tow:server:CheckDistance")
+            local checkDist = Kora.callback.trigger("qb-tow:server:CheckDistance")
             if not checkDist then
                 return
             end
@@ -129,7 +129,7 @@ QB.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3, 
         label = 'Store Vehicle',
         icon = "fas fa-car",
         action = function()
-            local confirmed = QB.callback.trigger("qb-tow:server:ReturnVehicle")
+            local confirmed = Kora.callback.trigger("qb-tow:server:ReturnVehicle")
             if not confirmed then
                 return
             end
@@ -149,7 +149,7 @@ QB.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3, 
 })
 
 local function addBlips()
-    blip = QB.blips.create(Tow.Locations.vehicle.coords, {
+    blip = Kora.blips.create(Tow.Locations.vehicle.coords, {
         sprite = 225,
         display = 4,
         scale = 0.8,

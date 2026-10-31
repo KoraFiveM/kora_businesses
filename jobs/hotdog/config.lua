@@ -40,7 +40,7 @@ Hotdog.Stock = {
             [3] = 45,
             [4] = 60,
         },
-        Label = QB.lang('hotdog.info.label_a'),
+        Label = Kora.lang('hotdog.info.label_a'),
         Price = {
             [1] = {
                 min = 8,
@@ -67,7 +67,7 @@ Hotdog.Stock = {
             [3] = 45,
             [4] = 60,
         },
-        Label = QB.lang('hotdog.info.label_b'),
+        Label = Kora.lang('hotdog.info.label_b'),
         Price = {
             [1] = {
                 min = 6,
@@ -94,7 +94,7 @@ Hotdog.Stock = {
             [3] = 45,
             [4] = 60,
         },
-        Label = QB.lang('hotdog.info.label_c'),
+        Label = Kora.lang('hotdog.info.label_c'),
         Price = {
             [1] = {
                 min = 4,

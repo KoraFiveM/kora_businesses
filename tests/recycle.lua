@@ -6,7 +6,7 @@ local env
 env = setmetatable({
     source = 1,
     Recycle = { DropLocation = 'drop', DeliveryActionDuration = 5000, PickupLocations = { { loc = 'pickup' } } },
-    QB = {
+    Kora = {
         callback = { register = function(name, fn) callbacks[name] = fn end },
         distance = { player = function(_, coords) return zone == coords end },
     },
@@ -70,7 +70,7 @@ local sellEvents, sellCallbacks = {}, {}
 local sellEnv = setmetatable({
     source = 1,
     Recycle = { SellMaterials = true, SellPed = 'sell', DropLocation = 'drop', DeliveryActionDuration = 5000, MaxSellPerRequest = 500, PickupLocations = {} },
-    QB = {
+    Kora = {
         callback = { register = function(name, fn) sellCallbacks[name] = fn end },
         distance = { player = function(_, coords) return nearSeller and coords == 'sell' end },
     },

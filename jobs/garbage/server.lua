@@ -57,7 +57,7 @@ local function isNearEntity(source, entity, distance)
     return #(GetEntityCoords(ped) - GetEntityCoords(entity)) <= distance
 end
 
-QB.callback.register('qb-garbagejob:spawnTruck', function(source)
+Kora.callback.register('qb-garbagejob:spawnTruck', function(source)
     if onJob[source] then
         return false
     end
@@ -78,7 +78,7 @@ QB.callback.register('qb-garbagejob:spawnTruck', function(source)
     return route
 end)
 
-QB.callback.register('qb-garbagejob:setTruck', function(source, vehicleNet)
+Kora.callback.register('qb-garbagejob:setTruck', function(source, vehicleNet)
     local job = onJob[source]
     if not job or job.vehicleNet then
         return false
@@ -106,7 +106,7 @@ QB.callback.register('qb-garbagejob:setTruck', function(source, vehicleNet)
     return true
 end)
 
-QB.callback.register('qb-garbagejob:collectBag', function(source, stopId)
+Kora.callback.register('qb-garbagejob:collectBag', function(source, stopId)
     local job = onJob[source]
     if not job then return false end
 
@@ -120,7 +120,7 @@ QB.callback.register('qb-garbagejob:collectBag', function(source, stopId)
     end
 
     local stop = Garbage.Locations.trashcan[stopId]
-    if not stop or not QB.distance.player(source, stop.coords, 4.0) then
+    if not stop or not Kora.distance.player(source, stop.coords, 4.0) then
         return false
     end
 
@@ -128,7 +128,7 @@ QB.callback.register('qb-garbagejob:collectBag', function(source, stopId)
     return true
 end)
 
-QB.callback.register('qb-garbagejob:depositBag', function(source, stopId)
+Kora.callback.register('qb-garbagejob:depositBag', function(source, stopId)
     local job = onJob[source]
     if not job then return false end
 
@@ -150,7 +150,7 @@ QB.callback.register('qb-garbagejob:depositBag', function(source, stopId)
     return true
 end)
 
-QB.callback.register('qb-garbagejob:completeStop', function(source, routeIndex)
+Kora.callback.register('qb-garbagejob:completeStop', function(source, routeIndex)
     local job = onJob[source]
     if not job or job.routeIndex ~= routeIndex then
         return false
@@ -172,7 +172,7 @@ QB.callback.register('qb-garbagejob:completeStop', function(source, routeIndex)
     return true
 end)
 
-QB.callback.register('qb-garbagejob:returnTruck', function(source, vehicleNet)
+Kora.callback.register('qb-garbagejob:returnTruck', function(source, vehicleNet)
     local job = onJob[source]
     if not job or job.routeIndex <= #job.route then
         return false
@@ -195,7 +195,7 @@ QB.callback.register('qb-garbagejob:returnTruck', function(source, vehicleNet)
         return false
     end
 
-    if not QB.distance.player(source, Garbage.Locations.main, Garbage.ReturnDistance) then
+    if not Kora.distance.player(source, Garbage.Locations.main, Garbage.ReturnDistance) then
         return false
     end
 
@@ -210,7 +210,7 @@ QB.callback.register('qb-garbagejob:returnTruck', function(source, vehicleNet)
     return payment
 end)
 
-QB.callback.register('qb-garbagejob:cancel', function(source)
+Kora.callback.register('qb-garbagejob:cancel', function(source)
     local job = onJob[source]
     if not job then
         return true

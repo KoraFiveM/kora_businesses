@@ -81,7 +81,7 @@ trust client-supplied job or installation data.
 Businesses request call-outs through:
 
 ```lua
-QB.callback.trigger('qbbusinesses:cctv:requestCallout', {
+Kora.callback.trigger('qbbusinesses:cctv:requestCallout', {
     business = 'businessName',
     issue = 'camera', -- or 'nvr'
     cameraId = 'camera-id',
@@ -132,11 +132,11 @@ ready for full call-out hydration/persistence.
 
 The intended CCTV presentation layer uses:
 
-- `QB.camera` for live scripted CCTV views.
+- `Kora.camera` for live scripted CCTV views.
 - kora_lib placement tools for installing cameras.
 - kora_lib interactions/target integration for engineer actions.
-- `QB.callback` for server-authoritative requests.
-- `QB.nui.registerApp` and `QB.nui.openApp` for AppShell.
+- `Kora.callback` for server-authoritative requests.
+- `Kora.nui.registerApp` and `Kora.nui.openApp` for AppShell.
 - kora_lib notifications and progress UI for field work.
 
 ## Current status
@@ -156,7 +156,7 @@ Not yet implemented:
 
 - Camera placement and world prop synchronisation.
 - NVR/camera installation workflow.
-- Live camera feeds through `QB.camera`.
+- Live camera feeds through `Kora.camera`.
 - Damage, destruction smoke, and network outages.
 - Motion detection and ANPR.
 - Employee-level CCTV permissions.

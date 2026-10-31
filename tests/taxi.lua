@@ -12,7 +12,7 @@ local function distance(a, b)
 end
 env.Core, env.CoreInternal = { util = {}, player = {} }, { player = { COLUMN_FOR = {} } }
 env.AddEventHandler, env.CreateThread = function() end, function() end
-env.QB = {
+env.Kora = {
     util = { isCallable = function(value) return type(value) == 'function' end, vecDistance = distance },
     callback = { register = function(name, fn) callbacks[name] = fn end },
     distance = { player = function(src, coords, range) return distance(positions[src], coords) <= range end },
@@ -111,7 +111,7 @@ do
     for _, name in ipairs({ 'SetNewWaypoint', 'TaskStartScenarioInPlace', 'SetEntityAsMissionEntity',
         'FreezeEntityPosition', 'ClearPedTasksImmediately', 'TaskEnterVehicle', 'TaskWarpPedIntoVehicle',
         'SetVehicleNumberPlateText' }) do client[name] = function() end end
-    client.QB = {
+    client.Kora = {
         callback = { trigger = function(name) return callbacks[name](1) end },
         notify = { send = function() end },
         interact = { addBoxZone = function(_, _, _, options) actions = options end },

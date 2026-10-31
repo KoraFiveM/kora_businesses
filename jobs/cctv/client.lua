@@ -4,13 +4,13 @@ local APP_ID = 'qbbusinesses:cctv-laptop'
 local active = false
 
 local function hack(targetId)
-    local started, data = QB.callback.trigger('qbbusinesses:cctv:beginHack', { targetId = targetId })
+    local started, data = Kora.callback.trigger('qbbusinesses:cctv:beginHack', { targetId = targetId })
     if not started then
-        return QB.notify.send({ title = 'CCTV', message = data or 'Could not start the hack.', type = 'error' })
+        return Kora.notify.send({ title = 'CCTV', message = data or 'Could not start the hack.', type = 'error' })
     end
-    local result = QB.minigames.play(Cctv.hacking.game, nil, data.authorization)
-    local success, response = QB.callback.trigger('qbbusinesses:cctv:finishHack', { proof = result and result.proof })
-    QB.notify.send({
+    local result = Kora.minigames.play(Cctv.hacking.game, nil, data.authorization)
+    local success, response = Kora.callback.trigger('qbbusinesses:cctv:finishHack', { proof = result and result.proof })
+    Kora.notify.send({
         title = 'CCTV',
         message = success and ('Access granted: %s'):format(response.targetId) or (response or 'The hack failed.'),
         type = success and 'success' or 'error',
@@ -18,13 +18,13 @@ local function hack(targetId)
 end
 
 local function repair(targetId)
-    local started, data = QB.callback.trigger('qbbusinesses:cctv:beginRepairCheck', {
+    local started, data = Kora.callback.trigger('qbbusinesses:cctv:beginRepairCheck', {
         targetId = targetId,
     })
-    if not started then return QB.notify.send({ title = 'CCTV', message = data or 'Could not start repair.', type = 'error' }) end
-    local result = QB.minigames.play(Cctv.repairChecks.game, nil, data.authorization)
-    local success, response = QB.callback.trigger('qbbusinesses:cctv:finishRepairCheck', { proof = result and result.proof })
-    QB.notify.send({ title = 'CCTV', message = success and ('Repair check passed: %s'):format(response.targetId) or (response or 'The repair check failed.'), type = success and 'success' or 'error' })
+    if not started then return Kora.notify.send({ title = 'CCTV', message = data or 'Could not start repair.', type = 'error' }) end
+    local result = Kora.minigames.play(Cctv.repairChecks.game, nil, data.authorization)
+    local success, response = Kora.callback.trigger('qbbusinesses:cctv:finishRepairCheck', { proof = result and result.proof })
+    Kora.notify.send({ title = 'CCTV', message = success and ('Repair check passed: %s'):format(response.targetId) or (response or 'The repair check failed.'), type = success and 'success' or 'error' })
 end
 
 RegisterCommand('cctvhack', function(_, args)
@@ -41,9 +41,9 @@ local function openLaptop()
     if active then return end
     active = true
     CreateThread(function()
-        local data, err = QB.callback.trigger('qbbusinesses:cctv:laptopData')
+        local data, err = Kora.callback.trigger('qbbusinesses:cctv:laptopData')
         if not data then
-            QB.notify.send({ title = 'CCTV', message = err or 'Laptop access denied.', type = 'error' })
+            Kora.notify.send({ title = 'CCTV', message = err or 'Laptop access denied.', type = 'error' })
             active = false
             return
         end
@@ -64,7 +64,7 @@ local function openLaptop()
             }
         end
 
-        QB.nui.registerApp({
+        Kora.nui.registerApp({
             id = APP_ID, title = 'CCTV Engineer Laptop', description = 'Installed systems and service call-outs',
             icon = 'monitor-smartphone', width = 1100, height = 720,
             navigation = {
@@ -80,7 +80,7 @@ local function openLaptop()
                 } },
             },
         })
-        QB.nui.openApp(APP_ID)
+        Kora.nui.openApp(APP_ID)
         active = false
     end)
 end

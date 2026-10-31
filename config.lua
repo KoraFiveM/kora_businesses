@@ -67,7 +67,7 @@ Config.enable = {
 local function requireAll(list)
     if not list then return end
     for i = 1, #list do
-        QB.require.current(list[i])
+        Kora.require.current(list[i])
     end
 end
 
@@ -85,4 +85,4 @@ end
 
 Globals.Config = Config
 
-QB.require.current('init.lua')
+Kora.require.current('init.lua')

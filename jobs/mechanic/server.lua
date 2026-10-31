@@ -2,11 +2,11 @@ local permits = {}
 local permitCounter = 0
 
 local function notify(src, message, kind)
-    QB.notify.send(src, { title = 'Vehicle service', message = message, type = kind or 'error' })
+    Kora.notify.send(src, { title = 'Vehicle service', message = message, type = kind or 'error' })
 end
 
 local function getVehicle(src, netId)
-    return QB.world.resolveNetworkEntity(src, netId, {
+    return Kora.world.resolveNetworkEntity(src, netId, {
         entityType = 'vehicle',
         maxDistance = Mechanic.interaction.distance,
     })
@@ -81,7 +81,7 @@ local function makePermit(src, action, netId)
     return id
 end
 
-QB.callback.register('qbbusinesses:mechanic:permit', function(src, action, netId)
+Kora.callback.register('qbbusinesses:mechanic:permit', function(src, action, netId)
     local vehicle = getVehicle(src, netId)
     if not vehicle then return false, 'Move closer to a valid vehicle.' end
     local allowed, reason = canPerform(src, action, vehicle)

@@ -5,7 +5,7 @@ local pickupZone, dropOffZone = nil, nil
 
 local function dropOff()
     SetNewWaypoint(destination.x, destination.y)
-    dropOffZone = QB.zones.box({
+    dropOffZone = Kora.zones.box({
         coords = destination,
         size = vector3(5.0, 5.0, 5.0),
         rotation = 0,
@@ -18,26 +18,26 @@ local function dropOff()
             pickupLocation, destination = nil, nil
             CreateThread(function()
                 Wait(5000)
-                QB.entities.remove(departingNpc)
+                Kora.entities.remove(departingNpc)
             end)
         end,
     })
 end
 
 local function spawnPickup()
-    local data = QB.callback.trigger('qb-taxi:getPickupLocation')
+    local data = Kora.callback.trigger('qb-taxi:getPickupLocation')
     if not data then
-        QB.notify.send({ title = 'Taxi', message = 'You must be on duty as a taxi driver.', type = 'error' })
+        Kora.notify.send({ title = 'Taxi', message = 'You must be on duty as a taxi driver.', type = 'error' })
         return false
     end
     pickupLocation = data.pickup
     destination = data.dropoff
-    npc = QB.entities.create(Taxi.Peds[math.random(1, #Taxi.Peds)], pickupLocation, {})
+    npc = Kora.entities.create(Taxi.Peds[math.random(1, #Taxi.Peds)], pickupLocation, {})
     TaskStartScenarioInPlace(npc, 'WORLD_HUMAN_STAND_IMPATIENT', 0, true)
     SetEntityAsMissionEntity(npc, true, true)
     FreezeEntityPosition(npc, true)
     SetNewWaypoint(pickupLocation.x, pickupLocation.y)
-    pickupZone = QB.zones.box({
+    pickupZone = Kora.zones.box({
         coords = pickupLocation,
         size = vector3(5.0, 5.0, 5.0),
         rotation = 0,
@@ -71,15 +71,15 @@ RegisterNetEvent('qb-taxi:client:spawnPickup', function()
 
 end)
 
-QB.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0.0), {
+Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0.0), {
     {
         label = 'Spawn Taxi',
         action = function()
-            taxi = QB.entities.create('taxi', Taxi.parkLocation, {})
+            taxi = Kora.entities.create('taxi', Taxi.parkLocation, {})
             TaskWarpPedIntoVehicle(PlayerPedId(), taxi, -1)
             SetVehicleNumberPlateText(taxi, "TAXI")
             if not spawnPickup() then
-                QB.entities.remove(taxi)
+                Kora.entities.remove(taxi)
                 taxi = nil
             end
         end,
@@ -90,7 +90,7 @@ QB.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0.0
     {
         label = 'Return Taxi',
         action = function()
-            QB.entities.remove(taxi)
+            Kora.entities.remove(taxi)
             taxi = nil
             pickupLocation, destination = nil, nil
             if pickupZone then
@@ -103,7 +103,7 @@ QB.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0.0
             end
             destination = nil
             if npc then
-                QB.entities.remove(npc)
+                Kora.entities.remove(npc)
                 npc = nil
             end
         end,

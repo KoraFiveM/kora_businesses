@@ -6,7 +6,7 @@ local env = {}
 for name, value in pairs(_G) do env[name] = value end
 env.Globals, env.Tow = {}, nil
 env.vector3 = function(x, y, z) return { x = x, y = y, z = z } end
-env.QB = {
+env.Kora = {
     interact = { addBoxZone = function(_, _, _, options) depot = options end },
     stream = { loadModel = function() return true end },
     notify = { send = noop },

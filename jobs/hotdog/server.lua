@@ -2,7 +2,7 @@ local Stock = {}      -- Stock[citizenid] = { common = n, rare = n, exotic = n }
 local Working = {}    -- Working[citizenid] = true while the deposit is held
 local Preparing = {}  -- Preparing[citizenid] = true while a prepare round is live, blocks overlap
 local function fail(msg)
-    QB.print.error(msg)
+    Kora.print.error(msg)
     return false
 end
 local function player(src) 
@@ -38,7 +38,7 @@ AddEventHandler('playerDropped', function()
     if cid then clearWorkingState(cid) end
 end)
 
-QB.callback.register('qb-hotdogjob:startWorking', function(src)
+Kora.callback.register('qb-hotdogjob:startWorking', function(src)
     local p = player(src)
     local cid = citizenId(src)
     assert(p and cid, 'Player not found.')
@@ -47,47 +47,47 @@ QB.callback.register('qb-hotdogjob:startWorking', function(src)
     local deposit = tonumber(Hotdog.StandDeposit) or 0
     if deposit > 0 then
         local paid, err = exports.kora_core:removeMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
-        if not paid then return fail(err or QB.lang('hotdog.error.no_money')) end
+        if not paid then return fail(err or Kora.lang('hotdog.error.no_money')) end
     end
     Working[cid] = true
     Stock[cid] = { common = 0, rare = 0, exotic = 0 }
     return true
 end)
 
-QB.callback.register('qb-hotdogjob:stopWorking', function(src)
+Kora.callback.register('qb-hotdogjob:stopWorking', function(src)
     local cid = citizenId(src)
     local p = player(src)
     if not cid or not p then return fail('Player not found.') end
-    if not Working[cid] then return fail(QB.lang('hotdog.error.no_stand_found')) end
+    if not Working[cid] then return fail(Kora.lang('hotdog.error.no_stand_found')) end
 
     exports.kora_core:addMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
     clearWorkingState(cid)
     return true
 end)
 
-QB.callback.register('qb-hotdogjob:beginPreparing', function(src)
+Kora.callback.register('qb-hotdogjob:beginPreparing', function(src)
     local cid = citizenId(src)
-    if not cid or not Working[cid] then return fail(QB.lang('hotdog.error.no_stand_found')) end
+    if not cid or not Working[cid] then return fail(Kora.lang('hotdog.error.no_stand_found')) end
     if Preparing[cid] then return  end
 
     Preparing[cid] = true
-    local authorization = QB.minigames.authorizeProof(src, 'keys', { amount = Hotdog.PrepareMinigameKeys })
+    local authorization = Kora.minigames.authorizeProof(src, 'keys', { amount = Hotdog.PrepareMinigameKeys })
     return { authorization = authorization }
 end)
 
-QB.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, authorization)
+Kora.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, authorization)
     local cid = citizenId(src)
     if not cid or not Working[cid] then Preparing[cid] = nil; return end
     if not Preparing[cid] then return fail('Nothing to finish.') end
     Preparing[cid] = nil
 
     if type(proof) ~= 'string' or type(authorization) ~= 'string'
-        or not QB.minigames.consumeProof(src, proof, 'keys', authorization) then
+        or not Kora.minigames.consumeProof(src, proof, 'keys', authorization) then
         return fail('Minigame could not be verified.')
     end
 
     if not skillData(src) then return fail('qbskills is required.') end
-    local won = QB.rewards.generate(Hotdog.PrepareRewards)[1]
+    local won = Kora.rewards.generate(Hotdog.PrepareRewards)[1]
     local quality = won.name
     local amount = Hotdog.batchSize(levelFor(src), quality)
 
@@ -102,14 +102,14 @@ QB.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, author
     return { quality = quality, amount = granted, label = Hotdog.Stock[quality].Label, full = granted < amount }
 end)
 
-QB.callback.register('qb-hotdogjob:sell', function(src, netId, quality, amount)
+Kora.callback.register('qb-hotdogjob:sell', function(src, netId, quality, amount)
     local cid = citizenId(src)
-    if not cid or not Working[cid] then return fail(QB.lang('hotdog.error.no_stand_found')) end
+    if not cid or not Working[cid] then return fail(Kora.lang('hotdog.error.no_stand_found')) end
 
     local ped = NetworkGetEntityFromNetworkId(tonumber(netId) or 0)
     local playerPed = GetPlayerPed(src)
     if ped == 0 or playerPed == 0 or #(GetEntityCoords(playerPed) - GetEntityCoords(ped)) > Hotdog.SaleDistance then
-        return fail(QB.lang('hotdog.error.too_far'))
+        return fail(Kora.lang('hotdog.error.too_far'))
     end
     amount = math.floor(tonumber(amount) or 0)
     local stock = Stock[cid]
@@ -129,6 +129,6 @@ QB.callback.register('qb-hotdogjob:sell', function(src, netId, quality, amount)
     return { amount = amount, unitPrice = unitPrice, total = total }
 end)
 
-exports.kora_core:addCommand('removestand', QB.lang('hotdog.info.command'), {}, false, function(source, _)
+exports.kora_core:addCommand('removestand', Kora.lang('hotdog.info.command'), {}, false, function(source, _)
     TriggerClientEvent('qb-hotdogjob:staff:DeletStand', source)
 end, 'admin')

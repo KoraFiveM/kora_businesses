@@ -13,7 +13,7 @@ env.TriggerClientEvent = function() end
 env.Player = function() return { state = { set = function() end } } end
 local callbacks, logs = {}, {}
 local authorizations, debits, refunds = 0, 0, 0
-env.QB = {
+env.Kora = {
     callback = { register = function(name, fn) callbacks[name] = fn end },
     print = { error = function(message) logs[#logs + 1] = message end },
     lang = function(key) return key end,
@@ -131,9 +131,9 @@ env.exports.kora_core.getPlayerData = function() return clientData end
 env.RegisterNetEvent = function(name, fn) clientEvents[name] = fn end
 local clientThreads = {}
 env.CreateThread = function(fn) clientThreads[#clientThreads + 1] = fn end
-env.QB.nui = { registerApp = function() end }
-env.QB.keybind = { add = function() end }
-env.QB.blips = { create = function() return 1 end, remove = function() end }
+env.Kora.nui = { registerApp = function() end }
+env.Kora.keybind = { add = function() end }
+env.Kora.blips = { create = function() return 1 end, remove = function() end }
 assert(loadfile(root .. 'jobs/hotdog/client.lua', 't', env))()
 local function upvalue(fn, wanted)
     for index = 1, debug.getinfo(fn, 'u').nups do
@@ -171,7 +171,7 @@ equal(offerRange('common', 1), ('%d-%d'):format(price.min, price.max), 'missing 
 
 -- Locale values must reach the real formatter, not a key-only fixture.
 local libraryRoot = os.getenv('QB_LIB_ROOT') or root .. '../kora_lib'
-env.QB.locale = {}
+env.Kora.locale = {}
 env.GetInvokingResource = function() return 'kora_businesses' end
 env.GetCurrentResourceName = function() return 'kora_businesses' end
 env.LoadResourceFile = function(resource, path)
@@ -186,20 +186,20 @@ local addCustomerTarget = upvalue(sellToPed, 'addCustomerTarget')
 local completeSale = upvalue(upvalue(addCustomerTarget, 'acceptOffer'), 'completeSale')
 local lastTarget, lastNotice, workOptions
 local saleCalls = {}
-env.QB.interact = {
+env.Kora.interact = {
     addEntity = function(ped, options) lastTarget = { ped = ped, options = options }; return 17 end,
     removeEntity = function() end,
     addBoxZone = function(_, _, _, options) workOptions = options end,
 }
-env.QB.notify = { send = function(data) lastNotice = data end }
-env.QB.nui.updateApp = function() end
-env.QB.nui.isAppOpen = function() return false end
-env.QB.cache = { ped = function() return 10 end }
-env.QB.anim = { play = function() end, clear = function() end }
-env.QB.entities = { delete = function() end }
+env.Kora.notify = { send = function(data) lastNotice = data end }
+env.Kora.nui.updateApp = function() end
+env.Kora.nui.isAppOpen = function() return false end
+env.Kora.cache = { ped = function() return 10 end }
+env.Kora.anim = { play = function() end, clear = function() end }
+env.Kora.entities = { delete = function() end }
 env.DoesEntityExist = function(entity) return entity == 101 end
 env.NetworkGetNetworkIdFromEntity = function(ped) return ped + 1000 end
-env.QB.callback.trigger = function(name, ...)
+env.Kora.callback.trigger = function(name, ...)
     if name ~= 'qb-hotdogjob:sell' then return true end
     saleCalls[#saleCalls + 1] = { ... }
     return { amount = 3, total = 27 }
@@ -223,7 +223,7 @@ equal(upvalue(completeSale, 'stock').common, 0, 'successful sale retains stock c
 -- Run only the captured startup registration and explicit work actions, never its watch loop.
 config.StandDeposit = 250
 env.vector3 = function(x, y, z) return { x = x, y = y, z = z } end
-env.QB.stream = { loadModel = function(_, callback) callback(1); return true end }
+env.Kora.stream = { loadModel = function(_, callback) callback(1); return true end }
 env.CreateObject = function() return 101 end
 env.PlaceObjectOnGroundProperly = function() end
 env.SetEntityHeading = function() end
@@ -234,7 +234,7 @@ equal(lastNotice.message, 'You paid a $250 deposit!', 'paid start formats the ex
 workOptions[2].action(); clientThreads[#clientThreads]()
 equal(lastNotice.message, 'Your $250 deposit has been returned!', 'stand return formats the existing deposit')
 equal(lastNotice.type, 'success', 'return notification type remains unchanged')
-equal(env.QB.lang('hotdog.' .. 'success.made_luck_hotdog', 2, 'Rare (B)'), 'You made 2 x Rare (B) Hot Dogs',
+equal(env.Kora.lang('hotdog.' .. 'success.made_luck_hotdog', 2, 'Rare (B)'), 'You made 2 x Rare (B) Hot Dogs',
     'unrelated positional hotdog phrases retain their contract')
 
 print('qbbusinesses hotdog: ' .. checks .. ' deposit and offer-price checks passed')

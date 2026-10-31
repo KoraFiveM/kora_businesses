@@ -10,7 +10,7 @@ end
 
 
 
-QB.callback.register('qb-taxi:getPickupLocation', function(source)
+Kora.callback.register('qb-taxi:getPickupLocation', function(source)
     if not taxiPlayer(source) then return nil end
     if not currentTaxis[source] then
         currentTaxis[source] = {}
@@ -18,7 +18,7 @@ QB.callback.register('qb-taxi:getPickupLocation', function(source)
     local pickup, dropoff = Taxi.PickUp[math.random(1, #Taxi.PickUp)], Taxi.DropOffs[math.random(1, #Taxi.DropOffs)]
     currentTaxis[source].pickup = pickup
     currentTaxis[source].dropoff = dropoff
-    currentTaxis[source].distance = QB.util.vecDistance(pickup, dropoff)
+    currentTaxis[source].distance = Kora.util.vecDistance(pickup, dropoff)
     currentTaxis[source].pickupComplete = false
     return {pickup = pickup, dropoff = dropoff}
 end)
@@ -26,13 +26,13 @@ end)
 RegisterNetEvent('qb-taxi:pickup', function()
     if not taxiPlayer(source) then return end
     assert(currentTaxis[source], "No current taxi found for this source")
-    assert(QB.distance.player(source, currentTaxis[source].pickup, 5.0), "Player is too far from the pickup location")
+    assert(Kora.distance.player(source, currentTaxis[source].pickup, 5.0), "Player is too far from the pickup location")
     currentTaxis[source].pickupComplete = true
 end)
 RegisterNetEvent('qb-taxi:dropOff', function()
     if not taxiPlayer(source) then return end
     assert(currentTaxis[source], "No current taxi found for this source")
-    assert(QB.distance.player(source, currentTaxis[source].dropoff, 5.0), "Player is too far from the dropoff location")
+    assert(Kora.distance.player(source, currentTaxis[source].dropoff, 5.0), "Player is too far from the dropoff location")
     assert(currentTaxis[source].pickupComplete, "Pickup has not been completed yet")
     local pay = math.floor(currentTaxis[source].distance * 0.2)
     exports.kora_core:addMoney(source, 'cash', pay)

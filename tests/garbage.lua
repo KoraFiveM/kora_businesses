@@ -42,7 +42,7 @@ local function setup(spawnIndex, rejectRegistration)
         GetEntityModel = function(entity) return entities[entity].model end,
         GetEntityCoords = function(entity) return entities[entity].coords end,
         DeleteEntity = function(entity) entities[entity] = nil end,
-        QB = {
+        Kora = {
             callback = { register = function(name, fn) callbacks[name] = fn end },
             distance = { player = function(_, coords, distance)
                 return #(entities[1].coords - coords) <= distance
@@ -62,7 +62,7 @@ local function setup(spawnIndex, rejectRegistration)
     entities[1] = { coords = env.Garbage.Peds[1].coords }
     loadResource('jobs/garbage/server.lua', env)
 
-    env.QB.callback.trigger = function(name, ...)
+    env.Kora.callback.trigger = function(name, ...)
         record(name)
         if name == 'qb-garbagejob:setTruck' then
             assert(select(1, ...) == state.truck + 1000, 'register the created network ID')
@@ -72,16 +72,16 @@ local function setup(spawnIndex, rejectRegistration)
         if name == 'qb-garbagejob:spawnTruck' then state.route = result end
         return result
     end
-    env.QB.stream = { loadModel = function() return true end }
-    env.QB.entities = { create = function() return 2 end }
-    env.QB.blips = {
+    env.Kora.stream = { loadModel = function() return true end }
+    env.Kora.entities = { create = function() return 2 end }
+    env.Kora.blips = {
         create = function(_, options)
             if options.route then record('stopBlip') end
             return 1
         end,
         remove = noop,
     }
-    env.QB.notify = { send = function(message)
+    env.Kora.notify = { send = function(message)
         if message.type == 'error' then state.errors = state.errors + 1 end
     end }
     env.exports.kora_target = {

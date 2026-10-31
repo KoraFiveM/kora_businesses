@@ -21,7 +21,7 @@ local function carryAnim()
 end
 
 local function progressbar(label, time)
-    return QB.progressbar.start({
+    return Kora.progressbar.start({
         label = label,
         duration = time,
         useWhileDead = false,
@@ -75,7 +75,7 @@ local function DropPackage()
     if not carryPackage then return end
     local object = carryPackage
     carryPackage, carryPed = nil, nil
-    if not QB.cache.isDead() then ClearPedTasks(PlayerPedId()) end
+    if not Kora.cache.isDead() then ClearPedTasks(PlayerPedId()) end
     if DoesEntityExist(object) then
         DetachEntity(object, true, true)
         DeleteObject(object)
@@ -91,7 +91,7 @@ local function watchCarry(object)
             Wait(500)
             if carryPackage ~= object then break end
             local ped = PlayerPedId()
-            if ped ~= carryPed or QB.cache.isDead() or not DoesEntityExist(object) then
+            if ped ~= carryPed or Kora.cache.isDead() or not DoesEntityExist(object) then
                 DropPackage()
                 TriggerServerEvent('qb-recyclejob:server:cancelPickup')
                 if onDuty and not packageCoords then GetRandomPackage() end
@@ -109,7 +109,7 @@ end
 local function PickupPackage()
     local ped = PlayerPedId()
     local dict, clip, flag = carryAnim()
-    local loaded, model = pcall(QB.stream.loadModel, Recycle.PickupBoxModel)
+    local loaded, model = pcall(Kora.stream.loadModel, Recycle.PickupBoxModel)
     if not loaded or not model then return false end
     local pos = GetEntityCoords(ped, true)
     -- Not a door object (last arg false) and not a mission entity: the old call passed true for all three.
@@ -122,7 +122,7 @@ local function PickupPackage()
     local rotation = Recycle.CarryRotation or vector3(300.0, 250.0, 20.0)
     AttachEntityToEntity(object, ped, boneIndex, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z, true, true, false, true, 1, true)
     carryPackage, carryPed = object, ped
-    local animLoaded, dictReady = pcall(QB.stream.loadAnimDict, dict)
+    local animLoaded, dictReady = pcall(Kora.stream.loadAnimDict, dict)
     if animLoaded and dictReady then
         TaskPlayAnim(ped, dict, clip, 5.0, -1, -1, flag, 0, false, false, false)
     end
@@ -131,7 +131,7 @@ local function PickupPackage()
 end
 
 local function SetLocationBlip()
-    QB.blips.create(Recycle.OutsideLocation, {
+    Kora.blips.create(Recycle.OutsideLocation, {
         sprite = 365,
         color = 2,
         scale = 0.8,
@@ -143,11 +143,11 @@ end
 SetLocationBlip()
 
 local function EnterLocation()
-    QB.visuals.fade(Recycle.InsideLocation)
+    Kora.visuals.fade(Recycle.InsideLocation)
 end
 
 local function ExitLocation()
-    QB.visuals.fade(Recycle.OutsideLocation)
+    Kora.visuals.fade(Recycle.OutsideLocation)
     onDuty = false
     TriggerServerEvent('qb-recyclejob:server:cancelPickup')
     DropPackage()
@@ -158,7 +158,7 @@ end
 
 local function toggleDuty()
     if onDuty then
-        QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.text.clock_out'), type = 'success' })
+        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.text.clock_out'), type = 'success' })
         onDuty = false
         TriggerServerEvent('qb-recyclejob:server:cancelPickup')
         DropPackage()
@@ -167,7 +167,7 @@ local function toggleDuty()
         end
         packageCoords = nil
     else
-        QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.text.clock_in'), type = 'success' })
+        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.text.clock_in'), type = 'success' })
         onDuty = true
         GetRandomPackage()
     end
@@ -176,12 +176,12 @@ end
 local function pickUp()
     if isBusy or not onDuty or not packageCoords then return end
     isBusy = true
-    if not QB.callback.trigger('qb-recyclejob:server:pickupPackage', packageCoords) then
+    if not Kora.callback.trigger('qb-recyclejob:server:pickupPackage', packageCoords) then
         isBusy = false
         TriggerServerEvent('qb-recyclejob:server:cancelPickup')
         return
     end
-    local success = progressbar(QB.lang('recycle.text.picking_up_the_package'), Recycle.PickupActionDuration)
+    local success = progressbar(Kora.lang('recycle.text.picking_up_the_package'), Recycle.PickupActionDuration)
     isBusy = false
     if not success then
         TriggerServerEvent('qb-recyclejob:server:cancelPickup')
@@ -189,7 +189,7 @@ local function pickUp()
     end
     if not PickupPackage() then
         TriggerServerEvent('qb-recyclejob:server:cancelPickup')
-        QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.error.carry_failed'), type = 'error' })
+        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.carry_failed'), type = 'error' })
         return
     end
     if props[packageCoords] then
@@ -200,7 +200,7 @@ end
 
 local function handInPackage()
     handingIn = true
-    local success = progressbar(QB.lang('recycle.text.unpacking_the_package'), Recycle.DeliveryActionDuration)
+    local success = progressbar(Kora.lang('recycle.text.unpacking_the_package'), Recycle.DeliveryActionDuration)
     handingIn = false
     if not success then return end
     DropPackage()
@@ -211,11 +211,11 @@ end
 local function Start()
     for k, v in pairs(Recycle.PickupLocations) do
         local model = Recycle.WarehouseObjects[v.model]
-        props[k] = QB.entities.create(model, v.loc, {freeze = true, invincible = true})
+        props[k] = Kora.entities.create(model, v.loc, {freeze = true, invincible = true})
         SetEntityHeading(props[k], 180.0)
         exports.kora_target:addEntity(props[k], {
             {
-                label = QB.lang('recycle.text.get_package'),
+                label = Kora.lang('recycle.text.get_package'),
                 icon = 'fas fa-box',
                 onSelect = function()
                     pickUp()
@@ -231,7 +231,7 @@ local function Start()
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {
             {
-                label = QB.lang('recycle.text.enter_warehouse'),
+                label = Kora.lang('recycle.text.enter_warehouse'),
                 onSelect = function()
                     EnterLocation()
                 end,
@@ -243,7 +243,7 @@ local function Start()
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {
             {
-                label = QB.lang('recycle.text.exit_warehouse'),
+                label = Kora.lang('recycle.text.exit_warehouse'),
                 onSelect = function()
                     ExitLocation()
                 end,
@@ -255,7 +255,7 @@ local function Start()
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {
             {
-                label = QB.lang('recycle.text.toggle_duty'),
+                label = Kora.lang('recycle.text.toggle_duty'),
                 onSelect = function()
                     toggleDuty()
                 end,
@@ -267,7 +267,7 @@ local function Start()
         size = vector4(4, 1.5, 2.0, 44.0),
         options = {
             {
-                label = QB.lang('recycle.text.hand_in_package'),
+                label = Kora.lang('recycle.text.hand_in_package'),
                 onSelect = function()
                     handInPackage()
                 end,

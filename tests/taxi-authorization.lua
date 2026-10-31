@@ -9,7 +9,7 @@ env.vector3 = function(x, y, z) return { x = x, y = y, z = z } end
 env.vector4 = function(x, y, z, w) return { x = x, y = y, z = z, w = w } end
 env.Core, env.CoreInternal = { util = {}, player = {} }, { player = { COLUMN_FOR = {} } }
 env.AddEventHandler, env.CreateThread = function() end, function() end
-env.QB = {
+env.Kora = {
     util = { isCallable = function(value) return type(value) == 'function' end,
         vecDistance = function() return 1000 end },
     callback = { register = function(name, fn) callbacks[name] = fn end },

@@ -13,9 +13,9 @@ local function maxPerSale(owned)
 end
 
 local function sellMaterials()
-    local itemList = QB.callback.trigger('qb-recyclejob:server:getPriceList')
+    local itemList = Kora.callback.trigger('qb-recyclejob:server:getPriceList')
     if not itemList then
-        QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.error.too_far_to_sell'), type = 'error' })
+        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.too_far_to_sell'), type = 'error' })
         return
     end
 
@@ -35,17 +35,17 @@ local function sellMaterials()
                 local entry = {
                     id = 'material:' .. itemName,
                     label = item.label,
-                    description = QB.lang('recycle.text.owned', owned) .. ' · ' .. QB.lang('recycle.text.price', price),
+                    description = Kora.lang('recycle.text.owned', owned) .. ' · ' .. Kora.lang('recycle.text.price', price),
                     image = item.image and 'nui://kora_inventory/images/' .. item.image,
                 }
                 if owned > 0 then
                     local max = maxPerSale(owned)
                     entry.action = {
                         id = sellAction,
-                        label = QB.lang('recycle.text.sell'),
+                        label = Kora.lang('recycle.text.sell'),
                         fields = {
                             {
-                                id = 'amount', label = QB.lang('recycle.text.amount'), type = 'number',
+                                id = 'amount', label = Kora.lang('recycle.text.amount'), type = 'number',
                                 min = 1, max = max, default = math.max(1, math.min(tonumber(Recycle.SellDefaultAmount) or 1, max)),
                                 required = true,
                             },
@@ -62,17 +62,17 @@ local function sellMaterials()
     local function buildNavigation(items)
         return {{
             id = 'materials',
-            label = QB.lang('recycle.text.sell_materials'),
+            label = Kora.lang('recycle.text.sell_materials'),
             icon = 'DollarSign',
             content = {
-                title = QB.lang('recycle.text.sell_materials'),
+                title = Kora.lang('recycle.text.sell_materials'),
                 blocks = {{ type = 'list', id = 'items', items = items }},
             },
         }}
     end
 
     local items = buildItems()
-    QB.nui.registerApp({
+    Kora.nui.registerApp({
         id = appId,
         title = 'Recycle Center',
         description = 'Sell your recyclable materials for cash.',
@@ -90,52 +90,52 @@ local function sellMaterials()
             local itemName = (context.itemId or ''):match('^material:(.+)$')
             local amount = context.value and tonumber(context.value.amount)
             if not itemName or not amount or amount <= 0 or amount ~= math.floor(amount) then
-                return { notice = { tone = 'destructive', message = QB.lang('recycle.error.invalid_amount') } }
+                return { notice = { tone = 'destructive', message = Kora.lang('recycle.error.invalid_amount') } }
             end
 
             local owned = ownedCount(itemName)
             if owned <= 0 then
-                return { notice = { tone = 'destructive', message = QB.lang('recycle.error.nothing_to_sell') } }
+                return { notice = { tone = 'destructive', message = Kora.lang('recycle.error.nothing_to_sell') } }
             end
             if amount > maxPerSale(owned) then
-                return { notice = { tone = 'destructive', message = QB.lang('recycle.error.not_enough', maxPerSale(owned)) } }
+                return { notice = { tone = 'destructive', message = Kora.lang('recycle.error.not_enough', maxPerSale(owned)) } }
             end
 
             TriggerServerEvent('qb-recyclejob:server:sellItem', itemName, amount)
-            QB.nui.closeApp(appId)
+            Kora.nui.closeApp(appId)
             Wait(500) -- let the inventory sync the sale before the counts are rebuilt
 
-            itemList = QB.callback.trigger('qb-recyclejob:server:getPriceList')
+            itemList = Kora.callback.trigger('qb-recyclejob:server:getPriceList')
             if not itemList then return end
 
             local refreshedItems = buildItems()
             if #refreshedItems == 0 then
-                QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.error.nothing_to_sell'), type = 'error' })
+                Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.nothing_to_sell'), type = 'error' })
                 return
             end
 
-            QB.nui.updateApp(appId, { navigation = buildNavigation(refreshedItems) })
-            QB.nui.openApp(appId)
+            Kora.nui.updateApp(appId, { navigation = buildNavigation(refreshedItems) })
+            Kora.nui.openApp(appId)
         end,
     })
 
     if #items == 0 then
-        QB.notify.send({ title = 'Recycle Center', message = QB.lang('recycle.error.nothing_to_sell'), type = 'error' })
+        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.nothing_to_sell'), type = 'error' })
         return
     end
 
-    QB.nui.updateApp(appId, { navigation = buildNavigation(items) })
-    QB.nui.openApp(appId)
+    Kora.nui.updateApp(appId, { navigation = buildNavigation(items) })
+    Kora.nui.openApp(appId)
 end
 
 if Recycle.SellMaterials then
-    local ped = QB.entities.create('s_m_m_dockwork_01', vector4(
+    local ped = Kora.entities.create('s_m_m_dockwork_01', vector4(
         Recycle.SellPed.x, Recycle.SellPed.y, Recycle.SellPed.z, Recycle.SellPed.w or 180.0
     ), { freeze = true, invincible = true })
 
     exports.kora_target:addEntity(ped, {{
         icon = 'fas fa-dollar-sign',
-        label = QB.lang('recycle.text.sell_materials'),
+        label = Kora.lang('recycle.text.sell_materials'),
         onSelect = sellMaterials,
     }})
 end

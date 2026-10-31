@@ -43,9 +43,9 @@ if Recycle.LimitedMaterials then
     }
 end
 
-QB.callback.register('qb-recyclejob:server:getPriceList', function(source)
+Kora.callback.register('qb-recyclejob:server:getPriceList', function(source)
     local src = source
-    if not QB.distance.player(src, Recycle.SellPed, 5.0) then return false end
+    if not Kora.distance.player(src, Recycle.SellPed, 5.0) then return false end
     return Sales
 end)
 
@@ -100,11 +100,11 @@ local function sellMaterials(src, item, amount)
     adjustStock(item, 'add', amount)
 end
 
-QB.callback.register('qb-recyclejob:server:pickupPackage', function(src, index)
+Kora.callback.register('qb-recyclejob:server:pickupPackage', function(src, index)
     if type(index) ~= 'number' or index % 1 ~= 0 then return false end
     local pickup = Recycle.PickupLocations[index]
     if not pickup or pendingPackages[src] then return false end
-    if not QB.distance.player(src, pickup.loc, 3.0) then return false end
+    if not Kora.distance.player(src, pickup.loc, 3.0) then return false end
     pendingPackages[src] = GetGameTimer()
     return true
 end)
@@ -121,7 +121,7 @@ RegisterNetEvent('qb-recyclejob:server:getItem', function()
     if lastCollection[src] and (now - lastCollection[src]) < coolDown then
         return
     end
-    if not QB.distance.player(src, Recycle.DropLocation, 5.0) then return end
+    if not Kora.distance.player(src, Recycle.DropLocation, 5.0) then return end
     -- Consume before inventory operations yield so one pickup cannot be redeemed twice.
     pendingPackages[src] = nil
     lastCollection[src] = now
@@ -145,7 +145,7 @@ RegisterNetEvent('qb-recyclejob:server:sellItem', function(item, amount)
     local src = source
     if not Recycle.SellMaterials then return end
     if not Sales[item] then return end
-    if not QB.distance.player(src, Recycle.SellPed, 5.0) then return end
+    if not Kora.distance.player(src, Recycle.SellPed, 5.0) then return end
     sellMaterials(src, item, amount)
 end)
 

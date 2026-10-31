@@ -191,8 +191,8 @@ Taxi = {
     },
 }
 -- Registers this resource-owned configuration with kora_lib.
-if QB and QB.config and QB.config.adopt then
-    local config = QB.config
+if Kora and Kora.config and Kora.config.adopt then
+    local config = Kora.config
     Taxi.jobRequired = config.string(Taxi.jobRequired, {
         label = 'Required taxi job (unused)', advanced = true,
         description = 'Legacy job identifier. Current taxi interactions do not check this value, so changing it does not restrict access. Restart qbtaxi to apply saved changes.',
