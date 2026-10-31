@@ -72,12 +72,28 @@ local function getItem(source, item, amount)
     exports.kora_inventory:addItem(source, item, amount)
 end
 
-local function sellMaterials(src, item, amount)
+-- Total owned across every stack of the item (falls back to the first stack if the full list is unavailable).
+local function ownedAmount(src, item)
+    local ok, stacks = pcall(function() return exports.kora_core:getItemsByName(src, item) end)
+    if ok and type(stacks) == 'table' then
+        local total = 0
+        for _, stack in pairs(stacks) do total = total + (tonumber(stack.amount) or 0) end
+        return total
+    end
     local has = exports.kora_core:getItemByName(src, item)
-    if not has or has.amount <= 0 then return end
+    return has and tonumber(has.amount) or 0
+end
+
+local function sellMaterials(src, item, amount)
+    local owned = ownedAmount(src, item)
+    if owned <= 0 then return end
     amount = tonumber(amount)
     if not amount or amount ~= math.floor(amount) or amount <= 0 then return end
-    amount = math.min(amount, has.amount, maxSell)
+    local limit = math.min(owned, Recycle.MaxSellPerRequest or maxSell)
+    if amount > limit then
+        if Recycle.SellOverAmount == 'reject' then return end
+        amount = limit
+    end
     local price = Sales[item] * amount
     if not exports.kora_inventory:removeItem(src, item, amount) then return end
     exports.kora_core:addMoney(src, 'cash', price)

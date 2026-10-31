@@ -16,6 +16,7 @@ return {
             clock_out = "You Have Clocked Out",
             sell_materials = "Sell Materials",
             price = "Price: $ %s",
+            owned = "You have: %s",
             amount = "Amount",
             sell = "Sell",
         },
@@ -25,6 +26,8 @@ return {
             out_of_stock = "%s Is Out Of Stock",
             too_far_to_sell = "You Are Too Far Away To Sell",
             carry_failed = "Could not pick up the package, try again",
+            invalid_amount = "Enter a valid amount.",
+            not_enough = "You only have %s of that material",
         },
     },
     hotdog = {
