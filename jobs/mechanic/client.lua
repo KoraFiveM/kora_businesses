@@ -86,8 +86,7 @@ local function notify(message, kind)
 end
 
 local function playerJob()
-    local ok, job = pcall(function() return exports.kora_core:getPlayerData({ 'job' }) end)
-    return ok and job or nil
+    return exports.kora_core:getPlayerData({ 'job' })
 end
 
 local function isOnDuty(job)

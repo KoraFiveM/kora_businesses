@@ -8,8 +8,6 @@ local function taxiPlayer(source)
     return player
 end
 
-
-
 Kora.callback.register('qb-taxi:getPickupLocation', function(source)
     if not taxiPlayer(source) then return nil end
     if not currentTaxis[source] then

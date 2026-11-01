@@ -44,7 +44,7 @@ local function spawnPickup()
         debug = false,
         onEnter = function()
             FreezeEntityPosition(taxi, true)
-            local maxSeats, freeSeat = GetVehicleMaxNumberOfPassengers(taxi)     
+            local maxSeats, freeSeat = GetVehicleMaxNumberOfPassengers(taxi)
             for i = maxSeats - 1, 0, -1 do
                 if IsVehicleSeatFree(taxi, i) then
                     freeSeat = i
@@ -68,7 +68,6 @@ end
 RegisterNetEvent('qb-taxi:client:spawnPickup', function()
     if source ~= 65535 then return end
     spawnPickup()
-
 end)
 
 Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0.0), {
@@ -101,7 +100,6 @@ Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0
                 dropOffZone.remove()
                 dropOffZone = nil
             end
-            destination = nil
             if npc then
                 Kora.entities.remove(npc)
                 npc = nil

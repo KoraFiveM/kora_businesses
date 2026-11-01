@@ -23,11 +23,17 @@ if not Kora.shared.get('items', Cctv.laptopItem) then
     if not registered then print(('^1[qbbusinesses]^7 CCTV laptop registration failed: %s'):format(err or 'unknown error')) end
 end
 
-exports.kora_inventory:CreateUsableItem(Cctv.laptopItem, function(src)
+local function playerJob(src)
     local job = exports.kora_core:getJob(src)
-    local grade = job and job.grade and (job.grade.level or job.grade)
-    if not job or job.name ~= Cctv.job or (Cctv.requireOnDuty and not job.onduty)
-        or tonumber(grade) < Cctv.minimumEngineerGrade then
+    if not job or job.name ~= Cctv.job then return nil end
+    if Cctv.requireOnDuty and not job.onduty then return nil end
+    local grade = job.grade and (job.grade.level or job.grade)
+    if tonumber(grade) < Cctv.minimumEngineerGrade then return nil end
+    return job
+end
+
+exports.kora_inventory:CreateUsableItem(Cctv.laptopItem, function(src)
+    if not playerJob(src) then
         return false, 'You must be an on-duty CCTV engineer to use this laptop.'
     end
     TriggerClientEvent('qbbusinesses:cctv:openLaptop', src)
@@ -51,15 +57,6 @@ end
 
 local function notify(src, message, kind)
     Kora.notify.send(src, { title = 'CCTV', message = message, type = kind or 'error' })
-end
-
-local function playerJob(src)
-    local job = exports.kora_core:getJob(src)
-    if not job or job.name ~= Cctv.job then return nil end
-    if Cctv.requireOnDuty and not job.onduty then return nil end
-    local grade = job.grade and (job.grade.level or job.grade)
-    if tonumber(grade) < Cctv.minimumEngineerGrade then return nil end
-    return job
 end
 
 local function engineerOnline()
@@ -182,9 +179,7 @@ Kora.callback.register('qbbusinesses:cctv:laptopData', function(src)
     if not playerJob(src) then return nil, 'You must be an on-duty CCTV engineer.' end
     local result = {}
     for _, callout in pairs(callouts) do result[#result + 1] = callout end
-    local systems = {}
-    local rows = Kora.sql.query('SELECT `id`, `business`, `business_label`, `camera_count`, `status` FROM `qbbusinesses_cctv_systems` WHERE `installer_business` = ?', { Cctv.job })
-    for _, system in ipairs(rows or {}) do systems[#systems + 1] = system end
+    local systems = Kora.sql.query('SELECT `id`, `business`, `business_label`, `camera_count`, `status` FROM `qbbusinesses_cctv_systems` WHERE `installer_business` = ?', { Cctv.job }) or {}
     return { systems = systems, callouts = result, company = Cctv.job }
 end)
 
