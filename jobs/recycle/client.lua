@@ -174,20 +174,24 @@ local function toggleDuty()
 end
 
 local function pickUp()
-    if isBusy or not onDuty or not packageCoords then return end
+    -- One box at a time: a carried box (or a pickup already in progress) blocks any further pickup.
+    if isBusy or handingIn or carryPackage or not onDuty or not packageCoords then return end
     isBusy = true
     if not Kora.callback.trigger('qb-recyclejob:server:pickupPackage', packageCoords) then
+        -- Refused: the server may still hold the authorization for a box we carry, so never cancel it here.
+        isBusy = false
+        return
+    end
+    local success = progressbar(Kora.lang('recycle.text.picking_up_the_package'), Recycle.PickupActionDuration)
+    if not success then
         isBusy = false
         TriggerServerEvent('qb-recyclejob:server:cancelPickup')
         return
     end
-    local success = progressbar(Kora.lang('recycle.text.picking_up_the_package'), Recycle.PickupActionDuration)
+    -- isBusy stays set while the prop streams in so a second pickup cannot start in that gap.
+    local carried = PickupPackage()
     isBusy = false
-    if not success then
-        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
-        return
-    end
-    if not PickupPackage() then
+    if not carried then
         TriggerServerEvent('qb-recyclejob:server:cancelPickup')
         Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.carry_failed'), type = 'error' })
         return
@@ -199,10 +203,13 @@ local function pickUp()
 end
 
 local function handInPackage()
+    local object = carryPackage
+    if not object or handingIn or isBusy then return end
     handingIn = true
     local success = progressbar(Kora.lang('recycle.text.unpacking_the_package'), Recycle.DeliveryActionDuration)
     handingIn = false
-    if not success then return end
+    -- The box may have been dropped (death, clock-out) while the bar ran; only a still-carried box pays out.
+    if not success or carryPackage ~= object then return end
     DropPackage()
     TriggerServerEvent('qb-recyclejob:server:getItem')
     GetRandomPackage()
@@ -221,7 +228,7 @@ local function Start()
                     pickUp()
                 end,
                 canInteract = function()
-                    return packageCoords == k and not isBusy
+                    return packageCoords == k and not isBusy and not carryPackage
                 end,
             },
         })
@@ -272,7 +279,7 @@ local function Start()
                     handInPackage()
                 end,
                 canInteract = function()
-                    return carryPackage ~= nil
+                    return carryPackage ~= nil and not handingIn and not isBusy
                 end,
             },
         }

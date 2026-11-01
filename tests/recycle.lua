@@ -36,6 +36,8 @@ assert(pickup(1, 1) == false, 'pickup requires a visit to the configured package
 zone = 'pickup'
 assert(pickup(1, '1') == false and pickup(1, 1.5) == false and pickup(1, 2) == false)
 assert(pickup(1, 1) == true and pickup(1, 1) == false, 'only one package can be pending')
+now = now + 600001
+assert(pickup(1, 1) == true, 'a stale authorization is replaced')
 zone = 'drop'
 redeem()
 assert(additions == 0, 'an immediate hand-in cannot bypass the server interval')

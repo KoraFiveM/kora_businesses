@@ -103,7 +103,10 @@ end
 Kora.callback.register('qb-recyclejob:server:pickupPackage', function(src, index)
     if type(index) ~= 'number' or index % 1 ~= 0 then return false end
     local pickup = Recycle.PickupLocations[index]
-    if not pickup or pendingPackages[src] then return false end
+    if not pickup then return false end
+    local pending = pendingPackages[src]
+    -- A live authorization means the player already has a box; a stale one (lost client) is replaced.
+    if pending and GetGameTimer() - pending < (Recycle.PendingPickupTimeout or 600000) then return false end
     if not Kora.distance.player(src, pickup.loc, 3.0) then return false end
     pendingPackages[src] = GetGameTimer()
     return true
