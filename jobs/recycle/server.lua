@@ -43,7 +43,7 @@ if Recycle.LimitedMaterials then
     }
 end
 
-Kora.callback.register('qb-recyclejob:server:getPriceList', function(source)
+Kora.callback.register('kora_businesses:recycle:getPriceList', function(source)
     local src = source
     if not Kora.distance.player(src, Recycle.SellPed, 5.0) then return false end
     return Sales
@@ -100,7 +100,16 @@ local function sellMaterials(src, item, amount)
     adjustStock(item, 'add', amount)
 end
 
-Kora.callback.register('qb-recyclejob:server:pickupPackage', function(src, index)
+-- Hand-in is accepted at the drop location, the configured hand-in zone or the drop-off ped.
+local function nearHandIn(src)
+    local distance = Recycle.HandInDistance or 5.0
+    local zone = Recycle.HandInZone or {}
+    if Kora.distance.player(src, Recycle.DropLocation, distance) then return true end
+    if zone.coords and Kora.distance.player(src, zone.coords, distance) then return true end
+    return Recycle.HandInAtSellPed ~= false and Kora.distance.player(src, Recycle.SellPed, distance) or false
+end
+
+Kora.callback.register('kora_businesses:recycle:pickupPackage', function(src, index)
     if type(index) ~= 'number' or index % 1 ~= 0 then return false end
     local pickup = Recycle.PickupLocations[index]
     if not pickup then return false end
@@ -112,17 +121,17 @@ Kora.callback.register('qb-recyclejob:server:pickupPackage', function(src, index
     return true
 end)
 
-RegisterNetEvent('qb-recyclejob:server:cancelPickup', function()
+RegisterNetEvent('kora_businesses:recycle:cancelPickup', function()
     pendingPackages[source] = nil
 end)
 
-RegisterNetEvent('qb-recyclejob:server:getItem', function()
+RegisterNetEvent('kora_businesses:recycle:getItem', function()
     local src = source
     local now = GetGameTimer()
     local pickedUpAt = pendingPackages[src]
     if not pickedUpAt or now - pickedUpAt < coolDown then return end
     if lastCollection[src] and (now - lastCollection[src]) < coolDown then return end
-    if not Kora.distance.player(src, Recycle.DropLocation, 5.0) then return end
+    if not nearHandIn(src) then return end
     -- Consume before inventory operations yield so one pickup cannot be redeemed twice.
     pendingPackages[src] = nil
     lastCollection[src] = now
@@ -142,7 +151,7 @@ RegisterNetEvent('qb-recyclejob:server:getItem', function()
     end
 end)
 
-RegisterNetEvent('qb-recyclejob:server:sellItem', function(item, amount)
+RegisterNetEvent('kora_businesses:recycle:sellItem', function(item, amount)
     local src = source
     if not Recycle.SellMaterials then return end
     if not Sales[item] then return end

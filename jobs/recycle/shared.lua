@@ -13,17 +13,27 @@ Recycle = {
 	DrawPackageLocationBlip = true,
 	PickupActionDuration    = math.random(4000, 6000),
 	DeliveryActionDuration  = 5000,
+	-- Pickup animation played during the "Picking up the package" progress bar (false = no animation).
+	-- Fields follow Kora.progressbar.start anim: dict, clip, flag (1 = loop, 0 = once), optional blendIn/blendOut.
+	PickupAnim              = { dict = 'mini@repair', clip = 'fixing_a_ped', flag = 1 },
+	-- Optional animation during the hand-in bar. Off by default so the carry pose stays on while unpacking.
+	HandInAnim              = false,
 	-- Carry prop shown in the player's hands between "Get Package" and "Hand In Package".
-	PickupBoxModel          = 'prop_cs_cardbox_01', -- any valid base-game (or streamed) prop model
+	PickupBoxModel          = 'hei_prop_heist_box', -- any valid base-game (or streamed) prop model
 	CarryPropNetworked      = true,                 -- true: other players see the box; false: local-only prop
-	CarryBone               = 57005,                -- ped bone id: 57005 = right hand (28422 = right hand IK, 60309 = left hand)
-	CarryOffset             = vector3(0.05, 0.1, -0.3),        -- attach offset relative to the bone
-	CarryRotation           = vector3(300.0, 250.0, 20.0),     -- attach rotation relative to the bone
+	CarryBone               = 60309,                -- ped bone id: 60309 = left hand (the box_carry pose holds the box in both hands from here; 57005 = right hand)
+	CarryOffset             = vector3(0.025, 0.08, 0.255),     -- attach offset relative to the bone (box_carry placement for hei_prop_heist_box)
+	CarryRotation           = vector3(-145.0, 290.0, 0.0),     -- attach rotation relative to the bone
 	CarryAnim               = {                                -- carry pose; flag 49 = loop + upper body only, so the player can walk
 		dict = 'anim@heists@box_carry@',
 		clip = 'idle',
 		flag = 49,
 	},
+	-- Hand-in target zone (shown only while carrying). nil fields fall back to DropLocation / these defaults.
+	-- size is the full extent as a vector3 and rotation is a separate heading in degrees (kora_target addBoxZone).
+	HandInZone              = { coords = nil, size = vector3(4.0, 4.0, 3.0), rotation = 0.0 },
+	HandInAtSellPed         = true, -- also offer "Hand In Package" on the drop-off ped (SellPed) while carrying
+	HandInDistance          = 6.0,  -- server: max distance from DropLocation / HandInZone.coords / SellPed to redeem a box
 	PendingPickupTimeout    = 600000, -- ms before an unredeemed pickup authorization expires so a lost/crashed client can pick up again
 	PickupLocations         = {
 		{ model = math.random(1, 7), loc = vector4(1067.68, -3095.57, -39.9, 342.39), },

@@ -54,7 +54,7 @@ assert(field.min == 1 and field.max == 12 and field.default == 1, 'amount limite
 assert(list['material:glass'].action.fields[1].max == 500, 'form maximum honours MaxSellPerRequest')
 
 local function act(id, amount)
-    return app.onAction('qb-recyclejob:sellItem', { itemId = id, value = { amount = amount } })
+    return app.onAction('kora_businesses:recycle:sellItem', { itemId = id, value = { amount = amount } })
 end
 for _, bad in ipairs({ 0, -1, 1.5, 'x' }) do
     local result = act('material:metalscrap', bad)

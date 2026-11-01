@@ -13,13 +13,13 @@ local function maxPerSale(owned)
 end
 
 local function sellMaterials()
-    local itemList = Kora.callback.trigger('qb-recyclejob:server:getPriceList')
+    local itemList = Kora.callback.trigger('kora_businesses:recycle:getPriceList')
     if not itemList then
         Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.too_far_to_sell'), type = 'error' })
         return
     end
 
-    local appId, sellAction = 'qb-recyclejob:sell', 'qb-recyclejob:sellItem'
+    local appId, sellAction = 'kora_businesses:recycle:sell', 'kora_businesses:recycle:sellItem'
 
     local function buildItems()
         local items, names = {}, {}
@@ -101,11 +101,11 @@ local function sellMaterials()
                 return { notice = { tone = 'destructive', message = Kora.lang('recycle.error.not_enough', maxPerSale(owned)) } }
             end
 
-            TriggerServerEvent('qb-recyclejob:server:sellItem', itemName, amount)
+            TriggerServerEvent('kora_businesses:recycle:sellItem', itemName, amount)
             Kora.nui.closeApp(appId)
             Wait(500) -- let the inventory sync the sale before the counts are rebuilt
 
-            itemList = Kora.callback.trigger('qb-recyclejob:server:getPriceList')
+            itemList = Kora.callback.trigger('kora_businesses:recycle:getPriceList')
             if not itemList then return end
 
             local refreshedItems = buildItems()
@@ -137,5 +137,12 @@ if Recycle.SellMaterials then
         icon = 'fas fa-dollar-sign',
         label = Kora.lang('recycle.text.sell_materials'),
         onSelect = sellMaterials,
+    }, {
+        icon = 'fas fa-box-open',
+        label = Kora.lang('recycle.text.hand_in_package'),
+        onSelect = function() if RecycleClient then RecycleClient.handIn() end end,
+        canInteract = function()
+            return Recycle.HandInAtSellPed ~= false and RecycleClient ~= nil and RecycleClient.canHandIn()
+        end,
     }})
 end

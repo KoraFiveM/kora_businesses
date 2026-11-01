@@ -1,17 +1,11 @@
 local carryPackage, packageCoords, carryPed = nil, nil, nil
 local onDuty, isBusy, handingIn = false, false, false
 local props = {}
-local progressConfig = {
-    disable = {
-        move = true,
-        car = true,
-        combat = true,
-    },
-    anim = {
-        dict = 'mp_arresting',
-        clip = 'a_uncuff',
-        flags = 17
-    }
+local disableControls = {
+    move = true,
+    moveMode = 'controls', -- block walking with a control lease instead of freezing the ped (freeze/unfreeze pops the camera)
+    car = true,
+    combat = true,
 }
 
 local function carryAnim()
@@ -19,41 +13,70 @@ local function carryAnim()
     return anim.dict or 'anim@heists@box_carry@', anim.clip or 'idle', anim.flag or 49
 end
 
-local function progressbar(label, time)
+-- Field names follow Kora.progressbar.start: anim = { dict, clip, flag, blendIn, blendOut, duration }.
+local function progressbar(label, time, anim)
     return Kora.progressbar.start({
         label = label,
         duration = time,
         useWhileDead = false,
         canCancel = true,
-        disable = progressConfig.disable,
-        anim = progressConfig.anim,
+        disable = disableControls,
+        anim = anim or nil,
     })
 end
+
+local function pickupAnim()
+    local anim = Recycle.PickupAnim
+    if anim == false then return nil end
+    anim = anim or {}
+    return {
+        dict = anim.dict or 'mini@repair',
+        clip = anim.clip or 'fixing_a_ped',
+        flag = anim.flag or 1,
+        blendIn = anim.blendIn,
+        blendOut = anim.blendOut,
+    }
+end
+
+local function handInAnim()
+    local anim = Recycle.HandInAnim
+    if not anim then return nil end
+    return { dict = anim.dict, clip = anim.clip, flag = anim.flag or 1, blendIn = anim.blendIn, blendOut = anim.blendOut }
+end
+
+local function stopCarryAnim(ped)
+    local dict, clip = carryAnim()
+    StopAnimTask(ped, dict, clip, 2.0)
+end
+
+-- Only the current package's pallet is outlined; every other pallet is cleared.
+local function refreshOutlines()
+    local show = Recycle.DrawPackageLocationBlip and onDuty and packageCoords ~= nil
+    for index, prop in pairs(props) do
+        if show and index == packageCoords then
+            SetEntityDrawOutline(prop, true)
+            SetEntityDrawOutlineColor(prop, 15, 20, 60)
+        else
+            SetEntityDrawOutline(prop, false)
+        end
+    end
+end
+
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
-    TriggerServerEvent('qb-recyclejob:server:cancelPickup')
-    if packageCoords and props[packageCoords] then
-        SetEntityDrawOutline(props[packageCoords], false)
-    end
+    TriggerServerEvent('kora_businesses:recycle:cancelPickup')
     for _, v in pairs(props) do
+        SetEntityDrawOutline(v, false)
         DeleteObject(v)
     end
     if carryPackage then
         DetachEntity(carryPackage, true, true)
         DeleteObject(carryPackage)
         carryPackage = nil
-        ClearPedTasks(PlayerPedId())
+        stopCarryAnim(PlayerPedId())
     end
     RemoveAnimDict((carryAnim()))
 end)
-
-local function DrawPackageLocationBlip()
-    if not Recycle.DrawPackageLocationBlip then return end
-    local prop = props[packageCoords]
-    if not prop then return end
-    SetEntityDrawOutline(prop, true)
-    SetEntityDrawOutlineColor(prop, 15, 20, 60)
-end
 
 local function GetRandomPackage()
     local total = #Recycle.PickupLocations
@@ -67,14 +90,14 @@ local function GetRandomPackage()
         until newCoords ~= packageCoords
         packageCoords = newCoords
     end
-    DrawPackageLocationBlip()
+    refreshOutlines()
 end
 
 local function DropPackage()
     if not carryPackage then return end
     local object = carryPackage
     carryPackage, carryPed = nil, nil
-    if not Kora.cache.isDead() then ClearPedTasks(PlayerPedId()) end
+    if not Kora.cache.isDead() then stopCarryAnim(PlayerPedId()) end
     if DoesEntityExist(object) then
         DetachEntity(object, true, true)
         DeleteObject(object)
@@ -92,7 +115,7 @@ local function watchCarry(object)
             local ped = PlayerPedId()
             if ped ~= carryPed or Kora.cache.isDead() or not DoesEntityExist(object) then
                 DropPackage()
-                TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+                TriggerServerEvent('kora_businesses:recycle:cancelPickup')
                 if onDuty and not packageCoords then GetRandomPackage() end
                 break
             end
@@ -104,25 +127,40 @@ local function watchCarry(object)
     end)
 end
 
--- Returns true once the box is attached to the player's hand.
+local function fail(reason)
+    print(('[kora_businesses:recycle] carry prop failed: %s'):format(reason))
+    return false
+end
+
+-- Returns true once the box is attached to the player's hands.
 local function PickupPackage()
     local ped = PlayerPedId()
     local dict, clip, flag = carryAnim()
-    local loaded, model = pcall(Kora.stream.loadModel, Recycle.PickupBoxModel)
-    if not loaded or not model then return false end
+    -- Kora.stream.loadModel returns the model hash (or false, reason) - never pass anything else to CreateObject.
+    local loaded, model, reason = pcall(Kora.stream.loadModel, Recycle.PickupBoxModel)
+    if not loaded or type(model) ~= 'number' then
+        return fail(('model %s did not load (%s)'):format(tostring(Recycle.PickupBoxModel), tostring(loaded and reason or model)))
+    end
+    -- Load the carry pose first so the box never hangs in the air while the dictionary streams.
+    local animLoaded, dictReady = pcall(Kora.stream.loadAnimDict, dict)
+    local poseReady = animLoaded and dictReady ~= false and dictReady ~= nil
     local pos = GetEntityCoords(ped, true)
     local object = CreateObject(model, pos.x, pos.y, pos.z, Recycle.CarryPropNetworked ~= false, false, false)
+    if (not object or object == 0) and Recycle.CarryPropNetworked ~= false then
+        object = CreateObject(model, pos.x, pos.y, pos.z, false, false, false) -- network object limit: fall back to a local prop
+    end
     SetModelAsNoLongerNeeded(model)
-    if not object or object == 0 or not DoesEntityExist(object) then return false end
+    if not object or object == 0 or not DoesEntityExist(object) then return fail('CreateObject returned no entity') end
+    -- Collision is switched off before the first physics step: a box spawned inside the ped otherwise shoves the camera.
+    SetEntityCollision(object, false, false)
     -- Bone index is resolved against the current ped: it is skeleton specific and changes after a ped/character swap.
-    local boneIndex = GetPedBoneIndex(ped, Recycle.CarryBone or 57005)
-    local offset = Recycle.CarryOffset or vector3(0.05, 0.1, -0.3)
-    local rotation = Recycle.CarryRotation or vector3(300.0, 250.0, 20.0)
+    local boneIndex = GetPedBoneIndex(ped, Recycle.CarryBone or 60309)
+    local offset = Recycle.CarryOffset or vector3(0.025, 0.08, 0.255)
+    local rotation = Recycle.CarryRotation or vector3(-145.0, 290.0, 0.0)
     AttachEntityToEntity(object, ped, boneIndex, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z, true, true, false, true, 1, true)
     carryPackage, carryPed = object, ped
-    local animLoaded, dictReady = pcall(Kora.stream.loadAnimDict, dict)
-    if animLoaded and dictReady then
-        TaskPlayAnim(ped, dict, clip, 5.0, -1, -1, flag, 0, false, false, false)
+    if poseReady then
+        TaskPlayAnim(ped, dict, clip, 5.0, 5.0, -1, flag, 0, false, false, false)
     end
     watchCarry(object)
     return true
@@ -147,23 +185,19 @@ end
 local function ExitLocation()
     Kora.visuals.fade(Recycle.OutsideLocation)
     onDuty = false
-    TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+    TriggerServerEvent('kora_businesses:recycle:cancelPickup')
     DropPackage()
-    if packageCoords and props[packageCoords] then
-        SetEntityDrawOutline(props[packageCoords], false)
-    end
+    refreshOutlines()
 end
 
 local function toggleDuty()
     if onDuty then
         Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.text.clock_out'), type = 'success' })
         onDuty = false
-        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+        TriggerServerEvent('kora_businesses:recycle:cancelPickup')
         DropPackage()
-        if packageCoords and props[packageCoords] then
-            SetEntityDrawOutline(props[packageCoords], false)
-        end
         packageCoords = nil
+        refreshOutlines()
     else
         Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.text.clock_in'), type = 'success' })
         onDuty = true
@@ -175,43 +209,48 @@ local function pickUp()
     -- One box at a time: a carried box (or a pickup already in progress) blocks any further pickup.
     if isBusy or handingIn or carryPackage or not onDuty or not packageCoords then return end
     isBusy = true
-    if not Kora.callback.trigger('qb-recyclejob:server:pickupPackage', packageCoords) then
+    if not Kora.callback.trigger('kora_businesses:recycle:pickupPackage', packageCoords) then
         -- Refused: the server may still hold the authorization for a box we carry, so never cancel it here.
         isBusy = false
         return
     end
-    local success = progressbar(Kora.lang('recycle.text.picking_up_the_package'), Recycle.PickupActionDuration)
+    local success = progressbar(Kora.lang('recycle.text.picking_up_the_package'), Recycle.PickupActionDuration, pickupAnim())
     if not success then
         isBusy = false
-        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+        TriggerServerEvent('kora_businesses:recycle:cancelPickup')
         return
     end
     -- isBusy stays set while the prop streams in so a second pickup cannot start in that gap.
     local carried = PickupPackage()
     isBusy = false
     if not carried then
-        TriggerServerEvent('qb-recyclejob:server:cancelPickup')
+        TriggerServerEvent('kora_businesses:recycle:cancelPickup')
         Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.carry_failed'), type = 'error' })
         return
     end
-    if props[packageCoords] then
-        SetEntityDrawOutline(props[packageCoords], false)
-    end
     packageCoords = nil
+    refreshOutlines()
+end
+
+local function canHandIn()
+    return carryPackage ~= nil and not handingIn and not isBusy
 end
 
 local function handInPackage()
     local object = carryPackage
     if not object or handingIn or isBusy then return end
     handingIn = true
-    local success = progressbar(Kora.lang('recycle.text.unpacking_the_package'), Recycle.DeliveryActionDuration)
+    local success = progressbar(Kora.lang('recycle.text.unpacking_the_package'), Recycle.DeliveryActionDuration, handInAnim())
     handingIn = false
     -- The box may have been dropped (death, clock-out) while the bar ran; only a still-carried box pays out.
     if not success or carryPackage ~= object then return end
     DropPackage()
-    TriggerServerEvent('qb-recyclejob:server:getItem')
+    TriggerServerEvent('kora_businesses:recycle:getItem')
     GetRandomPackage()
 end
+
+-- Lets sales.lua offer the hand-in on the drop-off ped (Recycle.HandInAtSellPed).
+RecycleClient = { canHandIn = canHandIn, handIn = handInPackage }
 
 local function Start()
     for k, v in pairs(Recycle.PickupLocations) do
@@ -229,6 +268,7 @@ local function Start()
             },
         })
     end
+    refreshOutlines()
     exports.kora_target:addBoxZone({
         coords = Recycle.OutsideLocation,
         size = vector4(4, 1.5, 2.0, 44.0),
@@ -259,16 +299,18 @@ local function Start()
             },
         }
     })
+    -- kora_target box zones take full extents as a vector3 and the heading as a separate `rotation` (degrees).
+    local zone = Recycle.HandInZone or {}
     exports.kora_target:addBoxZone({
-        coords = Recycle.DropLocation,
-        size = vector4(4, 1.5, 2.0, 44.0),
+        coords = zone.coords or Recycle.DropLocation,
+        size = zone.size or vector3(4.0, 4.0, 3.0),
+        rotation = zone.rotation or 0.0,
         options = {
             {
                 label = Kora.lang('recycle.text.hand_in_package'),
+                icon = 'fas fa-box-open',
                 onSelect = handInPackage,
-                canInteract = function()
-                    return carryPackage ~= nil and not handingIn and not isBusy
-                end,
+                canInteract = canHandIn,
             },
         }
     })

@@ -19,19 +19,19 @@ env = setmetatable({
     Wait = function()
         if not reentered then
             reentered = true
-            events['qb-recyclejob:server:getItem']()
+            events['kora_businesses:recycle:getItem']()
         end
     end,
     math = setmetatable({ random = function(low) return low end }, { __index = math }),
 }, { __index = _G })
 assert(loadfile(root .. 'jobs/recycle/server.lua', 't', env))()
-local redeem = events['qb-recyclejob:server:getItem']
+local redeem = events['kora_businesses:recycle:getItem']
 redeem()
 now = 10000
 redeem()
 assert(additions == 0, 'standing at hand-in must not authorize rewards, even after the cooldown')
 
-local pickup = assert(callbacks['qb-recyclejob:server:pickupPackage'])
+local pickup = assert(callbacks['kora_businesses:recycle:pickupPackage'])
 assert(pickup(1, 1) == false, 'pickup requires a visit to the configured package location')
 zone = 'pickup'
 assert(pickup(1, '1') == false and pickup(1, 1.5) == false and pickup(1, 2) == false)
@@ -55,7 +55,7 @@ redeem()
 assert(additions == received, 'consumed authorization rejects reentrant calls and later replays')
 
 for _, clear in ipairs({
-    function() events['qb-recyclejob:server:cancelPickup']() end,
+    function() events['kora_businesses:recycle:cancelPickup']() end,
     function() hooks.playerDropped() end,
     function() hooks['QBCore:Server:OnPlayerUnload'](1) end,
 }) do
@@ -66,6 +66,20 @@ for _, clear in ipairs({
     redeem()
     assert(additions == received, 'cancel, disconnect and character logout clear pickup authority')
 end
+-- The drop-off ped (SellPed) is an accepted hand-in spot too.
+env.Recycle.SellPed = 'sellped'
+zone = 'pickup'
+assert(pickup(1, 1) == true)
+now, zone = now + 5000, 'sellped'
+redeem()
+assert(additions > received, 'hand-in at the drop-off ped pays out')
+env.Recycle.HandInAtSellPed = false
+received = additions
+zone = 'pickup'
+assert(pickup(1, 1) == true)
+now, zone = now + 5000, 'sellped'
+redeem()
+assert(additions == received, 'ped hand-in can be switched off')
 -- Selling: amount validation and clamping stay server-authoritative.
 local owned, removed, paid, nearSeller = { { amount = 4 }, { amount = 3 } }, 0, 0, true
 local sellEvents, sellCallbacks = {}, {}
@@ -90,9 +104,9 @@ local sellEnv = setmetatable({
     Wait = function() end,
 }, { __index = _G })
 assert(loadfile(root .. 'jobs/recycle/server.lua', 't', sellEnv))()
-local sell = sellEvents['qb-recyclejob:server:sellItem']
+local sell = sellEvents['kora_businesses:recycle:sellItem']
 local function trySell(item, amount) removed, paid = 0, 0; sell(item, amount); return removed end
-assert(sellCallbacks['qb-recyclejob:server:getPriceList'](1) ~= false, 'price list available at the sell ped')
+assert(sellCallbacks['kora_businesses:recycle:getPriceList'](1) ~= false, 'price list available at the sell ped')
 assert(trySell('metalscrap', 5) == 5 and paid == 10, 'sells across every owned stack at the listed price')
 assert(trySell('metalscrap', 7) == 7 and trySell('metalscrap', 8) == 7, 'amount above owned is clamped to owned (default)')
 assert(trySell('metalscrap', 0) == 0 and trySell('metalscrap', -3) == 0 and trySell('metalscrap', 1.5) == 0, 'zero, negative and fractional amounts are rejected')
