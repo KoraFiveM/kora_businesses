@@ -103,7 +103,7 @@ Kora.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3
             SetVehicleFuelLevel(veh, 100.0)
             SetVehicleEngineOn(veh, true, true, false)
             setUpPickup(data)
-             delayed()
+            delayed()
         end,
         canInteract = function()
             return not veh
@@ -118,9 +118,7 @@ Kora.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3
                 return
             end
             DetachEntity(pickupVeh, true, true)
-           
         end,
-
         canInteract = function()
             return veh and pickupVeh and towAttached and not delay
         end

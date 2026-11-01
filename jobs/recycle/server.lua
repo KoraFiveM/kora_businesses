@@ -121,9 +121,7 @@ RegisterNetEvent('qb-recyclejob:server:getItem', function()
     local now = GetGameTimer()
     local pickedUpAt = pendingPackages[src]
     if not pickedUpAt or now - pickedUpAt < coolDown then return end
-    if lastCollection[src] and (now - lastCollection[src]) < coolDown then
-        return
-    end
+    if lastCollection[src] and (now - lastCollection[src]) < coolDown then return end
     if not Kora.distance.player(src, Recycle.DropLocation, 5.0) then return end
     -- Consume before inventory operations yield so one pickup cannot be redeemed twice.
     pendingPackages[src] = nil

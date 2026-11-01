@@ -222,9 +222,7 @@ local function Start()
             {
                 label = Kora.lang('recycle.text.get_package'),
                 icon = 'fas fa-box',
-                onSelect = function()
-                    pickUp()
-                end,
+                onSelect = pickUp,
                 canInteract = function()
                     return packageCoords == k and not isBusy and not carryPackage
                 end,
@@ -237,9 +235,7 @@ local function Start()
         options = {
             {
                 label = Kora.lang('recycle.text.enter_warehouse'),
-                onSelect = function()
-                    EnterLocation()
-                end,
+                onSelect = EnterLocation,
             },
         }
     })
@@ -249,9 +245,7 @@ local function Start()
         options = {
             {
                 label = Kora.lang('recycle.text.exit_warehouse'),
-                onSelect = function()
-                    ExitLocation()
-                end,
+                onSelect = ExitLocation,
             },
         }
     })
@@ -261,9 +255,7 @@ local function Start()
         options = {
             {
                 label = Kora.lang('recycle.text.toggle_duty'),
-                onSelect = function()
-                    toggleDuty()
-                end,
+                onSelect = toggleDuty,
             },
         }
     })
@@ -273,9 +265,7 @@ local function Start()
         options = {
             {
                 label = Kora.lang('recycle.text.hand_in_package'),
-                onSelect = function()
-                    handInPackage()
-                end,
+                onSelect = handInPackage,
                 canInteract = function()
                     return carryPackage ~= nil and not handingIn and not isBusy
                 end,

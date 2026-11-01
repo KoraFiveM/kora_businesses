@@ -96,7 +96,6 @@ Kora.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, auth
     local granted = math.min(amount, math.max(0, capacity - stock[quality]))
     stock[quality] = stock[quality] + granted
 
-    local p = player(src)
     exports.kora_skills:addRep(src, Hotdog.Skill, Hotdog.PrepareXp[quality] * granted)
 
     return { quality = quality, amount = granted, label = Hotdog.Stock[quality].Label, full = granted < amount }

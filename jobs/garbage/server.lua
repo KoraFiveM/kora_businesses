@@ -229,7 +229,6 @@ AddEventHandler('playerDropped', function()
     onJob[source] = nil
 end)
 
-
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
         onJob = {}

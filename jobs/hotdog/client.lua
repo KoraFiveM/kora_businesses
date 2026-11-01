@@ -1,6 +1,5 @@
 local playerData = exports.kora_core:getPlayerData()
 
-
 local standModel = 'prop_hotdogstand_01'
 local genericError = 'Something went wrong, try again.'
 
@@ -41,11 +40,9 @@ local QUALITY_META = {
     exotic = { label = 'Exotic', image = '/icon.png', color = '#2a9d5b' },
 }
 
-
 local function notify(message, notifyType)
     Kora.notify.send({ message = message, type = notifyType or 'info' })
 end
-
 
 local function runExclusive(fn)
     if isBusy then return end
@@ -158,7 +155,6 @@ local function updateBlip()
     end
 end
 
-
 local function markRecent(ped)
     local recent = selling.recentPeds
     recent[#recent + 1] = ped
@@ -215,11 +211,6 @@ local function findCustomer()
     return nil
 end
 
-local function handOverHotdog()
-    local ped = Kora.cache.ped()
-    Kora.anim.play(ped, 'mp_arresting', 'a_uncuff', { duration = 500, flag = 48 })
-end
-
 local function completeSale(ped, quality, amount)
     stock[quality] = stock[quality] - amount
     refreshUI()
@@ -238,7 +229,7 @@ local function completeSale(ped, quality, amount)
     end
 
     notify(Kora.lang('hotdog.success.sold_hotdogs', result.amount, result.total), 'success')
-    handOverHotdog()
+    Kora.anim.play(Kora.cache.ped(), 'mp_arresting', 'a_uncuff', { duration = 500, flag = 48 })
     releaseCustomer(ped, false)
 end
 
@@ -250,7 +241,6 @@ local function declineOffer(ped)
     removeCustomerTarget()
     releaseCustomer(ped, true)
 end
-
 
 local function acceptOffer(ped, quality, amount)
     if selling.target ~= ped or not selling.hasTarget then return end
@@ -368,7 +358,7 @@ local function startSelling()
             if not selling.hasTarget then
                 local ped = findCustomer()
                 if ped then
-                    local ok, err = pcall(sellToPed, ped)
+                    local ok = pcall(sellToPed, ped)
                     if not ok then
                         removeCustomerTarget()
                         releaseCustomer(ped, true)
@@ -474,15 +464,6 @@ local function watchStandHandling(run)
     end)
 end
 
-
-local function startPrepareAnim()
-    TaskStartScenarioInPlace(Kora.cache.ped(), 'PROP_HUMAN_BBQ', 0, true)
-end
-
-local function stopPrepareAnim()
-    ClearPedTasks(Kora.cache.ped())
-end
-
 local function prepareHotdog()
     if not isWorking or isPushing or isPreparing then return end
     isPreparing = true
@@ -494,10 +475,10 @@ local function prepareHotdog()
         return
     end
 
-    startPrepareAnim()
+    TaskStartScenarioInPlace(Kora.cache.ped(), 'PROP_HUMAN_BBQ', 0, true)
     local played, result = pcall(Kora.minigames.play, 'keys', nil, begun.authorization)
     isPreparing = false
-    stopPrepareAnim()
+    ClearPedTasks(Kora.cache.ped())
 
     local cancelled = played and type(result) == 'table' and result.cancelled == true
     local proof = played and type(result) == 'table' and result.success and result.proof or false
@@ -566,7 +547,6 @@ local function teardownStand()
 
     Kora.anim.clear(Kora.cache.ped(), true)
     isWorking = false
-    isPushing = false
     resetStock()
     refreshUI()
     if Kora.nui.isAppOpen(STOCK_APP_ID) then Kora.nui.closeApp(STOCK_APP_ID) end
