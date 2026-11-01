@@ -22,7 +22,7 @@ local Kora = {
     blips = { create = function() end },
     visuals = { fade = function() end },
     entities = { create = function() return newEntity() end },
-    callback = { trigger = function() return true end },
+    callback = { trigger = function() state.triggers = (state.triggers or 0) + 1; return state.callbackOk ~= false end },
     progressbar = { start = function() return true end },
 }
 
@@ -166,5 +166,30 @@ assert(not dropTarget.canInteract() and notifications[#notifications], 'failed o
 state.createFails = false
 pickupTarget.onSelect()
 assert(dropTarget.canInteract(), 'pickup can be retried after a failure')
+
+-- 10. One box at a time: carrying hides the pickup option, ignores select and never cancels the server authorization.
+dropTarget.onSelect() -- finish the box carried from test 9
+reset()
+startCarrying()
+local carried = state.attach.obj
+local triggersBefore = state.triggers
+state.attach = nil
+assert(not pickupTarget.canInteract(), 'pickup option hidden while carrying')
+pickupTarget.onSelect()
+assert(state.triggers == triggersBefore and not state.attach, 'no second pickup while carrying')
+assert(count(serverEvents, 'qb-recyclejob:server:cancelPickup') == 0, 'carrying a box keeps its server authorization')
+assert(dropTarget.canInteract() and entities[carried], 'box is still carried and can be handed in')
+
+-- 11. Hand-in pays once and a refused pickup after it does not cancel anything.
+serverEvents = {}
+dropTarget.onSelect()
+dropTarget.onSelect()
+assert(count(serverEvents, 'qb-recyclejob:server:getItem') == 1, 'hand-in requested once')
+state.callbackOk = false
+pickupTarget.onSelect()
+assert(count(serverEvents, 'qb-recyclejob:server:cancelPickup') == 0, 'refused pickup does not cancel the server state')
+state.callbackOk = true
+pickupTarget.onSelect()
+assert(dropTarget.canInteract(), 'next box can be picked up after a hand-in')
 
 print('kora_businesses recycle carry prop: attach config, failure and cleanup paths passed')

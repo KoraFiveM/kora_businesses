@@ -24,6 +24,7 @@ Recycle = {
 		clip = 'idle',
 		flag = 49,
 	},
+	PendingPickupTimeout    = 600000, -- ms before an unredeemed pickup authorization expires so a lost/crashed client can pick up again
 	PickupLocations         = {
 		{ model = math.random(1, 7), loc = vector4(1067.68, -3095.57, -39.9, 342.39), },
 		{ model = math.random(1, 7), loc = vector4(1065.20, -3095.57, -39.9, 342.39), },
