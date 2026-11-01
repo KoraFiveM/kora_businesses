@@ -30,6 +30,12 @@ local function setup(spawnIndex, rejectRegistration)
             state.events[name] = state.events[name] or {}
             table.insert(state.events[name], fn)
         end,
+        RegisterNetEvent = function(name, fn)
+            state.net = state.net or {}
+            state.net[name] = true
+            state.events[name] = state.events[name] or {}
+            if fn then table.insert(state.events[name], fn) end
+        end,
         CreateThread = noop,
         GetPlayerPed = function() return 1 end,
         PlayerPedId = function() return 1 end,

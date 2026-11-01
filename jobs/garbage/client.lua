@@ -364,7 +364,7 @@ local function createDepotBlip()
     end
 end
 
-AddEventHandler('QBCore:Client:OnJobUpdate', function(job)
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
     if job.name == 'garbage' then
         createDepotBlip()
         return
@@ -392,7 +392,7 @@ AddEventHandler('QBCore:Client:OnJobUpdate', function(job)
     removeBlips()
 end)
 
-AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     local playerData = exports.kora_core:getPlayerData()
     if playerData.job.name == 'garbage' then
         createDepotBlip()
