@@ -8,9 +8,9 @@ local Recieve = {
     { item = 'steel',      min = 1, max = 5 },
     { item = 'glass',      min = 1, max = 5 },
 }
-local luckyItem = 'cryptostick' -- Item to be given as a lucky item
-local maxRecieved = 5           -- Max items to be received
-local LuckyItemChance = 20      -- 20% chance to get a lucky item
+local luckyItem = 'cryptostick'
+local maxRecieved = 5
+local LuckyItemChance = 20
 local maxSell = 500 -- sanity clamp on a single sell request
 local coolDown = Recycle.DeliveryActionDuration or 3000 -- can't claim faster than the hand-in animation takes
 local Sales, Stock = {}, {}

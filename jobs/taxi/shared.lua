@@ -190,7 +190,6 @@ Taxi = {
         'a_m_m_rurmeth_01',
     },
 }
--- Registers this resource-owned configuration with kora_lib.
 if Kora and Kora.config and Kora.config.adopt then
     local config = Kora.config
     Taxi.jobRequired = config.string(Taxi.jobRequired, {

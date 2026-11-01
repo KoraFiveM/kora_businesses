@@ -14,7 +14,6 @@ local progressConfig = {
     }
 }
 
--- Carry animation comes from Recycle.CarryAnim (shared.lua), read at use time.
 local function carryAnim()
     local anim = Recycle.CarryAnim or {}
     return anim.dict or 'anim@heists@box_carry@', anim.clip or 'idle', anim.flag or 49
@@ -112,7 +111,6 @@ local function PickupPackage()
     local loaded, model = pcall(Kora.stream.loadModel, Recycle.PickupBoxModel)
     if not loaded or not model then return false end
     local pos = GetEntityCoords(ped, true)
-    -- Not a door object (last arg false) and not a mission entity: the old call passed true for all three.
     local object = CreateObject(model, pos.x, pos.y, pos.z, Recycle.CarryPropNetworked ~= false, false, false)
     SetModelAsNoLongerNeeded(model)
     if not object or object == 0 or not DoesEntityExist(object) then return false end
