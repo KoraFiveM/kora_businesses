@@ -14,6 +14,9 @@ Mechanic.interaction = {
     distance = 3.0,                   -- maximum player-to-vehicle range, checked server-side
     permitLifetime = 45000,           -- ms; an approved action must be completed within this time
     permitRateLimit = { max = 8, window = 10000 },
+    -- Respray/bumper options only show (and are only accepted) while the vehicle is within
+    -- fullRepair.garageRadius of a fullRepair.garages bay. Set false to allow them anywhere.
+    requireShopZone = true,
 }
 
 Mechanic.fullRepair = {

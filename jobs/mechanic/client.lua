@@ -94,9 +94,11 @@ local function isOnDuty(job)
     return job and (not Mechanic.roles.requireOnDuty or job.onduty)
 end
 
+-- target treats a nil canInteract result as "allowed", so every filter must
+-- return a strict boolean.
 local function canRepair()
     local job = playerJob()
-    return isOnDuty(job) and (job.name == Mechanic.roles.fullRepairJob or job.type == Mechanic.roles.automotiveType)
+    return isOnDuty(job) and (job.name == Mechanic.roles.fullRepairJob or job.type == Mechanic.roles.automotiveType) and true or false
 end
 
 local function canFullRepair()
@@ -104,9 +106,22 @@ local function canFullRepair()
     return canRepair() and not Mechanic.roles.roadsideJobs[job.name]
 end
 
-local function canUseBodyshop()
+-- True when the vehicle is inside a configured shop/repair bay (the garages list).
+local function inShopZone(entity)
+    if not Mechanic.interaction.requireShopZone then return true end
+    if not entity or not DoesEntityExist(entity) then return false end
+    local coords = GetEntityCoords(entity)
+    for _, bay in ipairs(Mechanic.fullRepair.garages) do
+        if #(coords - bay) <= Mechanic.fullRepair.garageRadius then return true end
+    end
+    return false
+end
+
+local function canUseBodyshop(entity)
     local job = playerJob()
-    return isOnDuty(job) and (Mechanic.roles.bodyshopJobs[job.name] or Mechanic.roles.bodyshopTypes[job.type])
+    if not isOnDuty(job) then return false end
+    if not (Mechanic.roles.bodyshopJobs[job.name] or Mechanic.roles.bodyshopTypes[job.type]) then return false end
+    return inShopZone(entity)
 end
 
 local function servicePayload(action, vehicle)
