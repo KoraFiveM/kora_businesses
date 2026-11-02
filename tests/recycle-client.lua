@@ -8,11 +8,16 @@ local targets, pickups, zoneDefs, bars, outlines, palletEntities = {}, {}, {}, {
 local entities, nextHandle = {}, 100
 local state = { ped = 1, dead = false, modelOk = true, createFails = false, doorFlag = nil, networked = nil, bone = nil, attach = nil, anim = nil, playing = true }
 local deleted = {}
+local cacheListeners, timeouts = {}, {}
 
 local function newEntity() nextHandle = nextHandle + 1; entities[nextHandle] = true; return nextHandle end
 
 local Kora = {
-    cache = { isDead = function() return state.dead end },
+    cache = {
+        isDead = function() return state.dead end,
+        ped = function() return state.ped end,
+        onChange = function(key, fn) cacheListeners[key] = cacheListeners[key] or {}; table.insert(cacheListeners[key], fn) end,
+    },
     stream = {
         loadModel = function(model) state.loadedModel = model; if not state.modelOk then return false, 'timeout' end return 1234 end,
         loadAnimDict = function(dict) return dict end,
@@ -22,7 +27,7 @@ local Kora = {
     blips = { create = function() end },
     visuals = { fade = function() end },
     entities = { create = function() local e = newEntity(); palletEntities[#palletEntities + 1] = e; return e end },
-    callback = { trigger = function() state.triggers = (state.triggers or 0) + 1; return state.callbackOk ~= false end },
+    callback = { trigger = function() state.triggers = (state.triggers or 0) + 1; return state.callbackOk ~= false and { networked = state.grantNetworked == true } or false end },
     progressbar = { start = function(payload) bars[#bars + 1] = payload; return true end },
 }
 
@@ -50,6 +55,8 @@ env = setmetatable({
     AddEventHandler = function(name, fn) handlers[name] = fn end,
     TriggerServerEvent = function(name) serverEvents[#serverEvents + 1] = name end,
     CreateThread = function(fn) threads[#threads + 1] = coroutine.create(fn) end,
+    SetTimeout = function(ms, fn) timeouts[#timeouts + 1] = { ms = ms, fn = fn } end,
+    IsPedRagdoll = function() return state.ragdoll == true end,
     Wait = function() if coroutine.isyieldable() then coroutine.yield() end end,
     PlayerPedId = function() return state.ped end,
     GetEntityCoords = function() return vec(0, 0, 0) end,
@@ -87,7 +94,11 @@ local function pump(n)
         end
     end
 end
-pump(2) -- Start(): registers targets
+pump(3) -- Start(): registers targets (third pass reaps the finished thread)
+assert(#threads == 0, 'no polling thread is left running')
+
+local function fire(key, new, old) for _, fn in ipairs(cacheListeners[key] or {}) do fn(new, old) end end
+local function runTimeouts() local list = timeouts; timeouts = {}; for _, t in ipairs(list) do t.fn() end end
 
 local pickupTarget = {
     onSelect = function() pickups[1].onSelect() end,
@@ -112,7 +123,8 @@ assert(state.attach, 'box prop is attached on pickup')
 assert(state.bone.ped == 1 and state.bone.bone == 28422, 'bone resolved from configured id on the current ped')
 assert(state.attach.bone == 5000 + 28422 and state.attach.ped == 1)
 assert(state.attach.ox == 0.5 and state.attach.oy == 0.6 and state.attach.oz == 0.7 and state.attach.rx == 1.0 and state.attach.rz == 3.0, 'configured offsets used')
-assert(state.doorFlag == false and state.networked == true, 'prop is created as a plain (non-door) object')
+assert(state.doorFlag == false and state.networked == false, 'prop is a plain (non-door) local object unless the server grants networking')
+assert(#threads == 0, 'carrying starts no polling thread')
 assert(state.anim and state.anim.dict == 'test@dict' and state.anim.flag == 49, 'configured carry anim played with walkable flag')
 local firstObject = state.attach.obj
 
@@ -125,7 +137,7 @@ assert(count(serverEvents, 'kora_businesses:recycle:getItem') == 1)
 startCarrying()
 local obj = state.attach.obj
 state.dead = true
-pump(4)
+fire('isDead', true, false)
 assert(deleted[obj] and not dropTarget.canInteract(), 'death removes the prop')
 assert(count(serverEvents, 'kora_businesses:recycle:cancelPickup') >= 1, 'death cancels the server pickup')
 state.dead = false
@@ -134,14 +146,18 @@ state.dead = false
 startCarrying()
 obj = state.attach.obj
 state.ped = 2
-pump(4)
+fire('ped', 2, 1)
 assert(deleted[obj] and not dropTarget.canInteract(), 'ped change removes the prop')
 state.ped = 1
 
 -- 5. Anim is re-applied if it was knocked off while carrying.
 startCarrying()
 state.anim, state.playing = nil, false
-pump(4)
+state.ragdoll = true
+fire('coords', vec(1, 0, 0), vec(0, 0, 0))
+assert(not state.anim, 'carry pose waits until the ped is off the floor')
+state.ragdoll = false
+fire('coords', vec(2, 0, 0), vec(1, 0, 0))
 assert(state.anim and state.anim.clip == 'test_clip', 'carry pose restored')
 state.playing = true
 
@@ -240,5 +256,44 @@ local second = currentIndex()
 n, which = outlined()
 assert(second and second ~= first and n == 1 and which == palletEntities[second], 'new package outlines only the new pallet')
 assert(count(serverEvents, 'kora_businesses:recycle:getItem') == 1, 'hand-in pays out through the server once')
+
+
+-- 16. Strict entity lockdown regression: a box that vanishes after pickup no longer silently cancels the carry.
+reset()
+if dropTarget.canInteract() then dropTarget.onSelect() end
+if not pickupTarget.canInteract() then dutyTarget.onSelect() end
+pickupTarget.onSelect()
+local localBox = state.attach.obj
+assert(state.networked == false and #timeouts == 0, 'default grant carries a local box with no follow-up check')
+fire('coords', vec(5, 0, 0), vec(4, 0, 0))
+assert(dropTarget.canInteract() and entities[localBox], 'box stays carried while walking')
+dropTarget.onSelect()
+
+-- 17. Networked grant: if the network removes the box anyway, a local one replaces it and the hand-in still pays.
+reset()
+state.grantNetworked = true
+pickupTarget.onSelect()
+local netBox = state.attach.obj
+assert(state.networked == true and #timeouts == 1, 'server-granted box is networked and verified once')
+entities[netBox] = nil -- server lockdown deletes the networked entity
+runTimeouts()
+assert(state.networked == false and state.attach.obj ~= netBox and entities[state.attach.obj], 'local box replaces the removed networked one')
+local replacement = state.attach.obj
+assert(dropTarget.canInteract(), 'still carrying after the networked box was removed')
+serverEvents = {}
+dropTarget.onSelect()
+assert(deleted[replacement] and count(serverEvents, 'kora_businesses:recycle:getItem') == 1, 'replacement box is handed in and paid')
+state.grantNetworked = false
+
+-- 18. Getting into a vehicle drops the box and releases the authorization.
+reset()
+pickupTarget.onSelect()
+obj = state.attach.obj
+fire('vehicle', 77, false)
+assert(deleted[obj] and not dropTarget.canInteract(), 'entering a vehicle removes the prop')
+assert(count(serverEvents, 'kora_businesses:recycle:cancelPickup') == 1, 'vehicle entry cancels the server pickup')
+fire('vehicle', false, 77)
+fire('isDead', false, true)
+assert(count(serverEvents, 'kora_businesses:recycle:cancelPickup') == 1, 'interrupts are ignored when nothing is carried')
 
 print('kora_businesses recycle carry prop: attach config, failure and cleanup paths passed')

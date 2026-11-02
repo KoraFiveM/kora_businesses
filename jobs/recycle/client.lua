@@ -73,7 +73,7 @@ AddEventHandler('onResourceStop', function(resourceName)
         DetachEntity(carryPackage, true, true)
         DeleteObject(carryPackage)
         carryPackage = nil
-        stopCarryAnim(PlayerPedId())
+        stopCarryAnim(carryPed or PlayerPedId())
     end
     RemoveAnimDict((carryAnim()))
 end)
@@ -85,7 +85,6 @@ local function GetRandomPackage()
     else
         local newCoords
         repeat
-            Wait(0)
             newCoords = math.random(1, total)
         until newCoords ~= packageCoords
         packageCoords = newCoords
@@ -95,9 +94,9 @@ end
 
 local function DropPackage()
     if not carryPackage then return end
-    local object = carryPackage
+    local object, ped = carryPackage, carryPed
     carryPackage, carryPed = nil, nil
-    if not Kora.cache.isDead() then stopCarryAnim(PlayerPedId()) end
+    if not Kora.cache.isDead() then stopCarryAnim(ped or Kora.cache.ped()) end
     if DoesEntityExist(object) then
         DetachEntity(object, true, true)
         DeleteObject(object)
@@ -105,36 +104,60 @@ local function DropPackage()
     RemoveAnimDict((carryAnim()))
 end
 
--- Releases the box when the carrier dies, switches ped (character swap) or the prop vanishes,
--- and re-applies the carry pose if something (vehicle, ragdoll) knocked it off.
-local function watchCarry(object)
-    CreateThread(function()
-        while carryPackage == object do
-            Wait(500)
-            if carryPackage ~= object then break end
-            local ped = PlayerPedId()
-            if ped ~= carryPed or Kora.cache.isDead() or not DoesEntityExist(object) then
-                DropPackage()
-                TriggerServerEvent('kora_businesses:recycle:cancelPickup')
-                if onDuty and not packageCoords then GetRandomPackage() end
-                break
-            end
-            local dict, clip, flag = carryAnim()
-            if not handingIn and not isBusy and not IsEntityPlayingAnim(ped, dict, clip, 3) and HasAnimDictLoaded(dict) then
-                TaskPlayAnim(ped, dict, clip, 5.0, -1, -1, flag, 0, false, false, false)
-            end
-        end
-    end)
+-- Drops the box and releases the server authorization; the player gets a new package to fetch.
+local function abandonCarry()
+    if not carryPackage then return end
+    DropPackage()
+    TriggerServerEvent('kora_businesses:recycle:cancelPickup')
+    if onDuty and not packageCoords then GetRandomPackage() end
 end
+
+local function ensureCarryPose()
+    local ped = carryPed
+    local dict, clip, flag = carryAnim()
+    if not ped or IsEntityPlayingAnim(ped, dict, clip, 3) or IsPedRagdoll(ped) or not HasAnimDictLoaded(dict) then return end
+    TaskPlayAnim(ped, dict, clip, 5.0, -1, -1, flag, 0, false, false, false)
+end
+
+-- Carry interrupts come from kora_lib's cache change callbacks instead of a polling thread.
+Kora.cache.onChange('isDead', function(dead)
+    if dead then abandonCarry() end
+end)
+Kora.cache.onChange('ped', function(ped)
+    if carryPackage and ped ~= carryPed then abandonCarry() end -- character/ped swap: the box hangs on the old ped
+end)
+Kora.cache.onChange('vehicle', function(vehicle)
+    if vehicle then abandonCarry() end
+end)
+-- A jump, climb or ragdoll clears the upper-body carry pose; restore it on the cache's next position update.
+Kora.cache.onChange('coords', function()
+    if carryPackage and not handingIn and not isBusy then ensureCarryPose() end
+end)
 
 local function fail(reason)
     print(('[kora_businesses:recycle] carry prop failed: %s'):format(reason))
     return false
 end
 
+local function createCarryProp(model, ped, networked)
+    local pos = GetEntityCoords(ped, true)
+    local object = CreateObject(model, pos.x, pos.y, pos.z, networked, false, false)
+    if not object or object == 0 or not DoesEntityExist(object) then return nil end
+    -- Collision is switched off before the first physics step: a box spawned inside the ped otherwise shoves the camera.
+    SetEntityCollision(object, false, false)
+    -- Bone index is resolved against the current ped: it is skeleton specific and changes after a ped/character swap.
+    local boneIndex = GetPedBoneIndex(ped, Recycle.CarryBone or 60309)
+    local offset = Recycle.CarryOffset or vector3(0.025, 0.08, 0.255)
+    local rotation = Recycle.CarryRotation or vector3(-145.0, 290.0, 0.0)
+    AttachEntityToEntity(object, ped, boneIndex, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z, true, true, false, true, 1, true)
+    return object
+end
+
 -- Returns true once the box is attached to the player's hands.
-local function PickupPackage()
-    local ped = PlayerPedId()
+-- networked comes from the server: strict entity lockdown deletes client-created networked entities a moment
+-- after they spawn, which is why the box used to vanish straight after the progress bar.
+local function PickupPackage(networked)
+    local ped = Kora.cache.ped()
     local dict, clip, flag = carryAnim()
     -- Kora.stream.loadModel returns the model hash (or false, reason) - never pass anything else to CreateObject.
     local loaded, model, reason = pcall(Kora.stream.loadModel, Recycle.PickupBoxModel)
@@ -144,25 +167,34 @@ local function PickupPackage()
     -- Load the carry pose first so the box never hangs in the air while the dictionary streams.
     local animLoaded, dictReady = pcall(Kora.stream.loadAnimDict, dict)
     local poseReady = animLoaded and dictReady ~= false and dictReady ~= nil
-    local pos = GetEntityCoords(ped, true)
-    local object = CreateObject(model, pos.x, pos.y, pos.z, Recycle.CarryPropNetworked ~= false, false, false)
-    if (not object or object == 0) and Recycle.CarryPropNetworked ~= false then
-        object = CreateObject(model, pos.x, pos.y, pos.z, false, false, false) -- network object limit: fall back to a local prop
+    local object = createCarryProp(model, ped, networked)
+    if not object and networked then
+        networked = false
+        object = createCarryProp(model, ped, false) -- network object limit: fall back to a local prop
     end
-    SetModelAsNoLongerNeeded(model)
-    if not object or object == 0 or not DoesEntityExist(object) then return fail('CreateObject returned no entity') end
-    -- Collision is switched off before the first physics step: a box spawned inside the ped otherwise shoves the camera.
-    SetEntityCollision(object, false, false)
-    -- Bone index is resolved against the current ped: it is skeleton specific and changes after a ped/character swap.
-    local boneIndex = GetPedBoneIndex(ped, Recycle.CarryBone or 60309)
-    local offset = Recycle.CarryOffset or vector3(0.025, 0.08, 0.255)
-    local rotation = Recycle.CarryRotation or vector3(-145.0, 290.0, 0.0)
-    AttachEntityToEntity(object, ped, boneIndex, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z, true, true, false, true, 1, true)
+    if not object then
+        SetModelAsNoLongerNeeded(model)
+        return fail('CreateObject returned no entity')
+    end
     carryPackage, carryPed = object, ped
     if poseReady then
         TaskPlayAnim(ped, dict, clip, 5.0, 5.0, -1, flag, 0, false, false, false)
     end
-    watchCarry(object)
+    if networked then
+        -- One-shot check: if the network refused the entity anyway (e.g. a locked-down routing bucket), carry a local box.
+        SetTimeout(Recycle.CarryPropVerifyDelay or 1000, function()
+            if carryPackage ~= object or DoesEntityExist(object) then SetModelAsNoLongerNeeded(model) return end
+            local fallback = createCarryProp(model, carryPed, false)
+            SetModelAsNoLongerNeeded(model)
+            if fallback then
+                carryPackage = fallback
+            else
+                fail('networked box was removed and no local fallback could be created')
+            end
+        end)
+    else
+        SetModelAsNoLongerNeeded(model)
+    end
     return true
 end
 
@@ -209,7 +241,8 @@ local function pickUp()
     -- One box at a time: a carried box (or a pickup already in progress) blocks any further pickup.
     if isBusy or handingIn or carryPackage or not onDuty or not packageCoords then return end
     isBusy = true
-    if not Kora.callback.trigger('kora_businesses:recycle:pickupPackage', packageCoords) then
+    local grant = Kora.callback.trigger('kora_businesses:recycle:pickupPackage', packageCoords)
+    if not grant then
         -- Refused: the server may still hold the authorization for a box we carry, so never cancel it here.
         isBusy = false
         return
@@ -221,7 +254,7 @@ local function pickUp()
         return
     end
     -- isBusy stays set while the prop streams in so a second pickup cannot start in that gap.
-    local carried = PickupPackage()
+    local carried = PickupPackage(type(grant) == 'table' and grant.networked == true)
     isBusy = false
     if not carried then
         TriggerServerEvent('kora_businesses:recycle:cancelPickup')
