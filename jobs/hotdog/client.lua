@@ -28,6 +28,13 @@ local selling = {
 }
 
 local standOffset = { x = 0.0, y = -0.8, z = 1.0, distance = 2.0 }
+
+-- Local mirrors of the kora_lib cache so the polling loops below read an
+-- upvalue instead of making an export call per iteration.
+local myPed = Kora.cache.ped()
+local myDead = Kora.cache.isDead()
+Kora.cache.onChange('ped', function(ped) myPed = ped end)
+Kora.cache.onChange('isDead', function(dead) myDead = dead end)
 local pushAnim = { dict = 'missfinale_c2ig_11', clip = 'pushcar_offcliff_f' }
 local detachKeys = { 157, 158, 160, 164, 165, 73, 36, 44 }
 local pushBlockedControls = { 244, 23 }
@@ -301,7 +308,7 @@ local function sellToPed(ped)
         end
 
         spot = standSpot()
-        if #(GetEntityCoords(Kora.cache.ped()) - spot) > 10.0 then
+        if #(GetEntityCoords(myPed) - spot) > 10.0 then
             releaseCustomer(ped, true)
             stopSelling()
             notify(Kora.lang('hotdog.error.too_far'), 'error')
@@ -325,7 +332,7 @@ local function sellToPed(ped)
     addCustomerTarget(ped, quality, amount, range)
 
     while selling.enabled and selling.hasTarget and selling.target == ped and standExists() do
-        if #(GetEntityCoords(Kora.cache.ped()) - standSpot()) >= 4.0 then
+        if #(GetEntityCoords(myPed) - standSpot()) >= 4.0 then
             removeCustomerTarget()
             releaseCustomer(ped, true)
             stopSelling()
@@ -403,12 +410,52 @@ local function keepPushAnimation()
 
     CreateThread(function()
         while isPushing do
-            local ped = Kora.cache.ped()
+            local ped = myPed
             if not Kora.anim.isPlaying(ped) then
                 Kora.anim.play(ped, pushAnim.dict, pushAnim.clip, { flag = 50 })
             end
             Wait(1000)
         end
+    end)
+end
+
+-- Detach keys and the single-frame IsPedShooting check need the tight cadence;
+-- the state checks (aiming, melee, dead, ragdoll) only need a few runs a second.
+local standStateInterval = 100
+
+local function shouldDropStand(ped, checkState)
+    for i = 1, #detachKeys do
+        local key = detachKeys[i]
+        if IsControlJustPressed(0, key) or IsDisabledControlJustPressed(0, key) then
+            return true
+        end
+    end
+
+    if IsPedShooting(ped) then return true end
+    if not checkState then return false end
+
+    return IsPlayerFreeAiming(PlayerId()) or IsPedInMeleeCombat(ped) or myDead or IsPedRagdoll(ped)
+end
+
+-- Runs only while the stand is being pushed; takeStand() starts it.
+local watchingStand = false
+
+local function watchStandHandling(run)
+    if watchingStand then return end
+    watchingStand = true
+    CreateThread(function()
+        local nextStateCheck = 0
+        while isPushing and isWorking and workRun == run do
+            local now = GetGameTimer()
+            local checkState = now >= nextStateCheck
+            if checkState then nextStateCheck = now + standStateInterval end
+            if shouldDropStand(myPed, checkState) then
+                letGoOfStand()
+                break
+            end
+            Wait(5)
+        end
+        watchingStand = false
     end)
 end
 
@@ -430,38 +477,12 @@ local function takeStand()
     FreezeEntityPosition(standObject, false)
     FreezeEntityPosition(ped, false)
     keepPushAnimation()
+    watchStandHandling(workRun)
 end
 
 local function grabStand()
     if selling.enabled then stopSelling() end
     takeStand()
-end
-
-local function shouldDropStand(ped)
-    for i = 1, #detachKeys do
-        local key = detachKeys[i]
-        if IsControlJustPressed(0, key) or IsDisabledControlJustPressed(0, key) then
-            return true
-        end
-    end
-
-    return IsPedShooting(ped) or IsPlayerFreeAiming(Kora.cache.playerId())
-        or IsPedInMeleeCombat(ped) or Kora.cache.isDead() or IsPedRagdoll(ped)
-end
-
-local function watchStandHandling(run)
-    CreateThread(function()
-        while isWorking and workRun == run do
-            if isPushing then
-                if shouldDropStand(Kora.cache.ped()) then
-                    letGoOfStand()
-                end
-                Wait(5)
-            else
-                Wait(1000)
-            end
-        end
-    end)
 end
 
 local function prepareHotdog()
@@ -590,7 +611,6 @@ local function startWorking()
     resetStock()
 
     addStandTarget()
-    watchStandHandling(workRun)
 
     refreshUI()
     notify(Kora.lang('hotdog.success.deposit', Hotdog.StandDeposit), 'success')

@@ -132,6 +132,7 @@ env.RegisterNetEvent = function(name, fn) clientEvents[name] = fn end
 local clientThreads = {}
 env.CreateThread = function(fn) clientThreads[#clientThreads + 1] = fn end
 env.Kora.nui = { registerApp = function() end }
+env.Kora.cache = { ped = function() return 10 end, isDead = function() return false end, onChange = function() end }
 env.Kora.keybind = { add = function() end }
 env.Kora.blips = { create = function() return 1 end, remove = function() end }
 assert(loadfile(root .. 'jobs/hotdog/client.lua', 't', env))()

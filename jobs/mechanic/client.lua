@@ -27,8 +27,13 @@ local function rollTyreBurst(vehicle, speed)
     if wheels > 0 then SetVehicleTyreBurst(vehicle, math.random(0, wheels - 1), tyres.burstOnRims, 1000.0) end
 end
 
-CreateThread(function()
-    while true do
+-- The sampler only runs while the player is in a vehicle: it is started from the
+-- kora_lib cache 'vehicle' change and ends itself once the player is on foot.
+local inVehicle = Kora.cache.vehicle() and true or false
+local sampling = false
+
+local function sampleVehicleDamage()
+    while inVehicle do
         Wait(Mechanic.damage.interval)
         if not Mechanic.damage.enabled then goto continue end
         local ped = PlayerPedId()
@@ -75,7 +80,23 @@ CreateThread(function()
         state.engineHealth, state.bodyHealth = GetVehicleEngineHealth(vehicle), GetVehicleBodyHealth(vehicle)
         ::continue::
     end
+    if state.vehicle ~= 0 then reset(0) end
+end
+
+local function startVehicleDamage()
+    if sampling then return end
+    sampling = true
+    CreateThread(function()
+        sampleVehicleDamage()
+        sampling = false
+    end)
+end
+
+Kora.cache.onChange('vehicle', function(vehicle)
+    inVehicle = vehicle and true or false
+    if inVehicle then startVehicleDamage() end
 end)
+if inVehicle then startVehicleDamage() end
 
 AddEventHandler('onClientResourceStop', function(resource)
     if resource == GetCurrentResourceName() then reset(0) end
