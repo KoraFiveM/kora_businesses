@@ -27,76 +27,77 @@ local function rollTyreBurst(vehicle, speed)
     if wheels > 0 then SetVehicleTyreBurst(vehicle, math.random(0, wheels - 1), tyres.burstOnRims, 1000.0) end
 end
 
--- The sampler only runs while the player is in a vehicle: it is started from the
--- kora_lib cache 'vehicle' change and ends itself once the player is on foot.
-local inVehicle = Kora.cache.vehicle() and true or false
-local sampling = false
+-- Only runs while the player drives an eligible vehicle: kora_lib's cache
+-- 'seat'/'vehicle' change events start it, and it exits once that ends.
+local damageWorkerRunning = false
 
-local function sampleVehicleDamage()
-    while inVehicle do
-        Wait(Mechanic.damage.interval)
-        if not Mechanic.damage.enabled then goto continue end
-        local ped = PlayerPedId()
-        local vehicle = GetVehiclePedIsIn(ped, false)
-        if not eligible(vehicle) then
-            if state.vehicle ~= 0 then reset(0) end
-            goto continue
-        end
-        if state.vehicle ~= vehicle then reset(vehicle) end
+local function startDamageWorker()
+    if damageWorkerRunning then return end
+    if not eligible(GetVehiclePedIsIn(PlayerPedId(), false)) then return end
 
-        local coords, speed = GetEntityCoords(vehicle), GetEntitySpeed(vehicle)
-        local engineHealth, bodyHealth = GetVehicleEngineHealth(vehicle), GetVehicleBodyHealth(vehicle)
-        if state.coords then
-            local distance = #(coords - state.coords)
-            if Mechanic.damage.distanceWear.enabled and speed >= Mechanic.damage.distanceWear.minSpeed then
-                local km = distance / 1000.0
-                lowerHealth(vehicle, GetVehicleEngineHealth, SetVehicleEngineHealth, km * Mechanic.damage.distanceWear.enginePerKm)
-                lowerHealth(vehicle, GetVehicleBodyHealth, SetVehicleBodyHealth, km * Mechanic.damage.distanceWear.bodyPerKm)
-            end
-
-            local speedLoss = state.speed - speed
-            -- Deceleration alone is not evidence of a crash: braking, handbrake
-            -- turns and releasing the throttle can all exceed minSpeedLoss.
-            -- Native health loss since our previous sample is persistent crash
-            -- evidence, unlike HasEntityCollidedWithAnything (current frame only).
-            local minHealthLoss = Mechanic.damage.collision.minNativeHealthLoss or 1.0
-            local collisionDamage = state.engineHealth and state.bodyHealth
-                and (engineHealth < state.engineHealth - minHealthLoss or bodyHealth < state.bodyHealth - minHealthLoss)
-            if Mechanic.damage.collision.enabled and collisionDamage and speedLoss >= Mechanic.damage.collision.minSpeedLoss then
-                lowerHealth(vehicle, GetVehicleEngineHealth, SetVehicleEngineHealth, math.min(Mechanic.damage.collision.maxEngineDamage, speedLoss * Mechanic.damage.collision.engineDamagePerSpeedLoss))
-                lowerHealth(vehicle, GetVehicleBodyHealth, SetVehicleBodyHealth, math.min(Mechanic.damage.collision.maxBodyDamage, speedLoss * Mechanic.damage.collision.bodyDamagePerSpeedLoss))
-            end
-        end
-        rollTyreBurst(vehicle, speed)
-
-        local limp = Mechanic.damage.limpMode
-        if limp.enabled and GetVehicleEngineHealth(vehicle) <= limp.engineHealthThreshold then
-            SetVehicleEngineTorqueMultiplier(vehicle, limp.torqueMultiplier)
-            if speed >= limp.stallMinSpeed and math.random() < limp.stallChance then SetVehicleEngineOn(vehicle, false, true, true) end
-        else
-            SetVehicleEngineTorqueMultiplier(vehicle, 1.0)
-        end
-        state.coords, state.speed = coords, speed
-        state.engineHealth, state.bodyHealth = GetVehicleEngineHealth(vehicle), GetVehicleBodyHealth(vehicle)
-        ::continue::
-    end
-    if state.vehicle ~= 0 then reset(0) end
-end
-
-local function startVehicleDamage()
-    if sampling then return end
-    sampling = true
+    damageWorkerRunning = true
     CreateThread(function()
-        sampleVehicleDamage()
-        sampling = false
+        while true do
+            Wait(Mechanic.damage.interval)
+            local ped = PlayerPedId()
+            local vehicle = GetVehiclePedIsIn(ped, false)
+            if not eligible(vehicle) then
+                if state.vehicle ~= 0 then reset(0) end
+                break
+            end
+            if not Mechanic.damage.enabled then goto continue end
+            if state.vehicle ~= vehicle then reset(vehicle) end
+
+            local coords, speed = GetEntityCoords(vehicle), GetEntitySpeed(vehicle)
+            local engineHealth, bodyHealth = GetVehicleEngineHealth(vehicle), GetVehicleBodyHealth(vehicle)
+            if state.coords then
+                local distance = #(coords - state.coords)
+                if Mechanic.damage.distanceWear.enabled and speed >= Mechanic.damage.distanceWear.minSpeed then
+                    local km = distance / 1000.0
+                    lowerHealth(vehicle, GetVehicleEngineHealth, SetVehicleEngineHealth, km * Mechanic.damage.distanceWear.enginePerKm)
+                    lowerHealth(vehicle, GetVehicleBodyHealth, SetVehicleBodyHealth, km * Mechanic.damage.distanceWear.bodyPerKm)
+                end
+
+                local speedLoss = state.speed - speed
+                -- Deceleration alone is not evidence of a crash: braking, handbrake
+                -- turns and releasing the throttle can all exceed minSpeedLoss.
+                -- Native health loss since our previous sample is persistent crash
+                -- evidence, unlike HasEntityCollidedWithAnything (current frame only).
+                local minHealthLoss = Mechanic.damage.collision.minNativeHealthLoss or 1.0
+                local collisionDamage = state.engineHealth and state.bodyHealth
+                    and (engineHealth < state.engineHealth - minHealthLoss or bodyHealth < state.bodyHealth - minHealthLoss)
+                if Mechanic.damage.collision.enabled and collisionDamage and speedLoss >= Mechanic.damage.collision.minSpeedLoss then
+                    lowerHealth(vehicle, GetVehicleEngineHealth, SetVehicleEngineHealth, math.min(Mechanic.damage.collision.maxEngineDamage, speedLoss * Mechanic.damage.collision.engineDamagePerSpeedLoss))
+                    lowerHealth(vehicle, GetVehicleBodyHealth, SetVehicleBodyHealth, math.min(Mechanic.damage.collision.maxBodyDamage, speedLoss * Mechanic.damage.collision.bodyDamagePerSpeedLoss))
+                end
+            end
+            rollTyreBurst(vehicle, speed)
+
+            local limp = Mechanic.damage.limpMode
+            if limp.enabled and GetVehicleEngineHealth(vehicle) <= limp.engineHealthThreshold then
+                SetVehicleEngineTorqueMultiplier(vehicle, limp.torqueMultiplier)
+                if speed >= limp.stallMinSpeed and math.random() < limp.stallChance then SetVehicleEngineOn(vehicle, false, true, true) end
+            else
+                SetVehicleEngineTorqueMultiplier(vehicle, 1.0)
+            end
+            state.coords, state.speed = coords, speed
+            state.engineHealth, state.bodyHealth = GetVehicleEngineHealth(vehicle), GetVehicleBodyHealth(vehicle)
+            ::continue::
+        end
+        damageWorkerRunning = false
     end)
 end
 
-Kora.cache.onChange('vehicle', function(vehicle)
-    inVehicle = vehicle and true or false
-    if inVehicle then startVehicleDamage() end
+local function watchDriving()
+    Kora.cache.onChange('seat', startDamageWorker)
+    Kora.cache.onChange('vehicle', startDamageWorker)
+    startDamageWorker()
+end
+
+watchDriving()
+AddEventHandler('onClientResourceStart', function(resource)
+    if resource == 'kora_lib' then watchDriving() end
 end)
-if inVehicle then startVehicleDamage() end
 
 AddEventHandler('onClientResourceStop', function(resource)
     if resource == GetCurrentResourceName() then reset(0) end
