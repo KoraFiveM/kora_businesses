@@ -105,6 +105,14 @@ do
     client.CreateThread = function(fn) threads[#threads + 1] = coroutine.create(fn) end
     client.Wait = coroutine.yield
     client.PlayerPedId = function() return 1 end
+    local hooks = {}
+    client.TriggerEvent = function(name, ...) hooks[#hooks + 1] = { name = name, ... } end
+    client.Config = { jobs = { taxi = { npcFromOwnTaxi = true } } }
+    client.DoesEntityExist = function(entity) return alive[entity] == true end
+    client.joaat = function(name) return name end
+    client.GetVehiclePedIsIn = function() return 0 end
+    client.GetPedInVehicleSeat = function() return 0 end
+    client.GetEntityModel = function() return 'taxi' end
     client.GetVehicleMaxNumberOfPassengers = function() return 2 end
     client.IsVehicleSeatFree = function() return true end
     client.TaskLeaveVehicle = function(ped, vehicle, flag) left[#left + 1] = { ped, vehicle, flag } end
@@ -181,6 +189,40 @@ do
     cleanup(threads[2])
     assert(removed[#removed] == secondPassenger and not alive[secondPassenger],
         'returning the taxi must not discard a completed passenger cleanup handle')
+
+    local started, finished = 0, 0
+    for _, hook in ipairs(hooks) do
+        if hook.name == 'qbtaxi:client:meterTrip' then started = started + 1 end
+        if hook.name == 'qbtaxi:client:meterTripFinished' then finished = finished + 1 end
+    end
+    assert(started == 2 and finished == 3, 'the fare meter follows every pickup, drop-off and taxi return')
+
+    -- A trip can start from any taxi's driver seat; Return Taxi then leaves that vehicle alone.
+    local doTaxiNpc = clientEvents['qb-taxi:client:DoTaxiNpc']
+    local ownTaxi = 900
+    alive[ownTaxi] = true
+    client.GetVehiclePedIsIn = function() return ownTaxi end
+    client.GetPedInVehicleSeat = function() return 1 end
+    local createdBefore = #created
+    client.Config.jobs.taxi.npcFromOwnTaxi = false
+    doTaxiNpc()
+    assert(#created == createdBefore, 'npcFromOwnTaxi = false ignores the radial request')
+    client.Config.jobs.taxi.npcFromOwnTaxi = true
+    client.GetEntityModel = function() return 'adder' end
+    doTaxiNpc()
+    assert(#created == createdBefore, 'only a taxi model can start a trip')
+    client.GetEntityModel = function() return 'taxi' end
+    client.GetPedInVehicleSeat = function() return 2 end
+    doTaxiNpc()
+    assert(#created == createdBefore, 'only the driver seat can start a trip')
+    client.GetPedInVehicleSeat = function() return 1 end
+    doTaxiNpc()
+    assert(#created == createdBefore + 1 and alive[created[#created].entity], 'driver of a taxi starts a trip')
+    local radialPassenger = created[#created].entity
+    doTaxiNpc()
+    assert(#created == createdBefore + 1, 'a second request waits for the current trip')
+    actions[2].action()
+    assert(alive[ownTaxi] and not alive[radialPassenger], 'Return Taxi only deletes a taxi this job spawned')
     env.TriggerClientEvent = originalSpawn
 end
 

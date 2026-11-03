@@ -1,6 +1,8 @@
 Taxi = {
     jobRequired = 'taxi',
     Management = false, -- unused; current trips always pay the driver cash
+    -- Passenger meter defaults match pinned qb-taxijob. The NPC fare rate is Config.jobs.taxi.farePerMeter.
+    Meter = { defaultPrice = 125.0, startingPrice = 0, vehicles = { 'taxi' } },
     parkLocation = vector3(909.5, -177.35, 74.22), -- vehicle garage location
     PickUp = {
         vector4(257.61, -380.57, 44.71, 340.5),

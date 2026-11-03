@@ -89,7 +89,7 @@ local jobList = {
         conflicts = { 'kora_taxi' },
         filepaths = {
             server = { 'jobs/taxi/server.lua' },
-            client = { 'jobs/taxi/client.lua' },
+            client = { 'jobs/taxi/client.lua', 'jobs/taxi/meter.lua' },
             shared = { 'jobs/taxi/shared.lua' },
         },
     },

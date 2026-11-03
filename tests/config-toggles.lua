@@ -108,7 +108,7 @@ do
     local clientEnv, required = boot({ server = false, serverMap = map })
     check(clientEnv.Config.jobs.cctv.enabled == true, 'the client config is still on defaults at start')
     check(not has(required, 'jobs/cctv/client.lua') and has(required, 'jobs/taxi/client.lua')
-        and has(required, 'jobs/taxi/shared.lua'), 'client follows the server map')
+        and has(required, 'jobs/taxi/meter.lua') and has(required, 'jobs/taxi/shared.lua'), 'client follows the server map')
     check(not has(required, 'jobs/taxi/server.lua'), 'client never loads server files')
 
     local _, fallback = boot({ server = false })

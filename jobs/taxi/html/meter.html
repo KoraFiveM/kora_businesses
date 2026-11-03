@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <link rel="stylesheet" href="https://cfx-nui-kora_theme/theme.css" />
+        <script src="https://cfx-nui-kora_theme/theme.js?v=3" defer></script>
+        <link rel="stylesheet" href="meter.css" />
+        <title>Taxi Meter</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="g5-meter">
+                <div class="panel">
+                    <div class="box box1">
+                        <button class="toggle-meter-btn" type="button" aria-label="Start or stop fare meter">
+                            <p>Stopped</p>
+                        </button>
+                    </div>
+                    <div class="box box2">
+                        <span id="total-price">$ 0.00</span>
+                        <span id="total-price-label">Total Price $</span>
+                    </div>
+                    <div class="bottom-row">
+                        <div class="box box3">
+                            <span id="total-price-per-100m">$ 0.00</span>
+                            <span id="total-price-per-100m-label">Price p/ mile</span>
+                        </div>
+                        <div class="box box4">
+                            <span id="total-distance">0.0 mi</span>
+                            <span id="total-distance-label">Total Distance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="./meter.js"></script>
+    </body>
+</html>

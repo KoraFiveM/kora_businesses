@@ -14,6 +14,7 @@ dependency 'kora_core'
 dependency 'kora_inventory'
 dependency 'kora_banking'
 dependency 'kora_skills'
+dependency 'kora_theme'
 
 shared_scripts {
     '@kora_lib/init.lua',
@@ -26,12 +27,19 @@ server_scripts {
 }
 
 client_scripts {
+    '@kora_theme/client/bridge.lua',
 }
+
+-- Taxi fare meter screen (jobs/taxi/meter.lua).
+ui_page 'jobs/taxi/html/meter.html'
 
 files {
     'locales/**.lua',
     'jobs/**/**.lua',
     'jobs/hotdog/icon.png',
+    'jobs/taxi/html/meter.html',
+    'jobs/taxi/html/meter.css',
+    'jobs/taxi/html/meter.js',
     'sql/**.sql',
     'docs/**.md',
     'init.lua'

@@ -10,5 +10,7 @@ lua tests/hotdog.lua
 lua tests/mechanic.lua
 lua tests/taxi-authorization.lua
 lua tests/taxi.lua
+lua tests/taxi-meter.lua
+if command -v node >/dev/null 2>&1; then node tests/taxi-meter.test.js; fi
 lua tests/config-toggles.lua
 lua tests/tow.lua

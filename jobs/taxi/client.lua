@@ -1,5 +1,6 @@
 
 local taxi = nil
+local ownsTaxi = false
 local pickupLocation, destination, npc = nil, nil, nil
 local pickupZone, dropOffZone = nil, nil
 
@@ -15,6 +16,7 @@ local function dropOff()
             TaskLeaveVehicle(npc, taxi, 0)
             dropOffZone.remove()
             TriggerServerEvent('qb-taxi:dropOff')
+            TriggerEvent('qbtaxi:client:meterTripFinished')
             pickupLocation, destination = nil, nil
             CreateThread(function()
                 Wait(5000)
@@ -56,6 +58,7 @@ local function spawnPickup()
             FreezeEntityPosition(npc, false)
             TaskEnterVehicle(npc, taxi, -1, freeSeat, 1.0, 0)
             FreezeEntityPosition(taxi, false)
+            TriggerEvent('qbtaxi:client:meterTrip', pickupLocation, destination)
             dropOff()
         end,
         onExit = function()
@@ -75,6 +78,7 @@ Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0
         label = 'Spawn Taxi',
         action = function()
             taxi = Kora.entities.create('taxi', Taxi.parkLocation, {})
+            ownsTaxi = true
             TaskWarpPedIntoVehicle(PlayerPedId(), taxi, -1)
             SetVehicleNumberPlateText(taxi, "TAXI")
             if not spawnPickup() then
@@ -89,7 +93,9 @@ Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0
     {
         label = 'Return Taxi',
         action = function()
-            Kora.entities.remove(taxi)
+            if ownsTaxi then Kora.entities.remove(taxi) end
+            ownsTaxi = false
+            TriggerEvent('qbtaxi:client:meterTripFinished')
             taxi = nil
             pickupLocation, destination = nil, nil
             if pickupZone then
@@ -110,3 +116,20 @@ Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0
         end
     }
 }, false)
+
+-- The stock radial menu requests a native route; the server still validates the taxi job and arrivals.
+RegisterNetEvent('qb-taxi:client:DoTaxiNpc', function()
+    if not Config.jobs.taxi.npcFromOwnTaxi then return end
+    if pickupLocation or npc and DoesEntityExist(npc) then
+        Kora.notify.send({ title = 'Taxi', message = 'Finish the current taxi trip first.', type = 'error' })
+        return
+    end
+    local ped = PlayerPedId()
+    local current = GetVehiclePedIsIn(ped, false)
+    if current == 0 or GetPedInVehicleSeat(current, -1) ~= ped or GetEntityModel(current) ~= joaat('taxi') then
+        Kora.notify.send({ title = 'Taxi', message = 'Use the driver seat of a taxi to request a trip.', type = 'error' })
+        return
+    end
+    if taxi ~= current then taxi, ownsTaxi = current, false end
+    spawnPickup()
+end)
