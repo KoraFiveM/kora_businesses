@@ -8,6 +8,7 @@ lua tests/recycle-client.lua
 lua tests/recycle-sales.lua
 lua tests/hotdog.lua
 lua tests/mechanic.lua
+lua tests/mechanic-props.lua
 lua tests/taxi-authorization.lua
 lua tests/taxi.lua
 lua tests/taxi-meter.lua

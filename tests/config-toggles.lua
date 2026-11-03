@@ -61,6 +61,8 @@ do
             name .. ' loads by default')
     end
     check(not has(required, 'jobs/hotdog/server.lua') and not has(required, 'jobs/hotdog/config.lua'), 'hotdog is skipped')
+    check(has(required, 'jobs/mechanic/props.lua'), 'the mechanic SaveVehicleProps handler loads with the job')
+    check(env.Config.jobs.mechanic.persistCosmetics == true, 'mechanic cosmetics persist by default')
     check(not has(required, 'jobs/taxi/client.lua'), 'server never loads client files')
     check(required[#required] == 'init.lua', 'init.lua loads after the jobs')
     check(env.Config.jobs.taxi.farePerMeter == 0.2 and env.Config.jobs.taxi.minSpeedMps == 45.0
@@ -147,6 +149,8 @@ do
     end
     check(#read('jobs/hotdog/icon.png') > 8, 'hotdog icon.png exists')
     check(read('fxmanifest.lua'):find("'jobs/hotdog/icon.png'", 1, true), 'icon is in the manifest files')
+    check(read('fxmanifest.lua'):find("provide 'qb-mechanicjob'", 1, true) and read('fxmanifest.lua'):find("provide 'qbmechanic'", 1, true),
+        'the legacy mechanic resource names are provided')
     check(read('jobs/hotdog/client.lua'):find("nui://kora_businesses/jobs/hotdog/icon.png", 1, true),
         'client points at the kora_businesses nui path')
     check(not read('jobs/hotdog/client.lua'):find('qb-hotdogjob/icon.png', 1, true), 'no stale qb-hotdogjob path')

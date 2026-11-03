@@ -5,6 +5,9 @@ lua54 'yes'
 name 'kora_businesses'
 -- Keep the legacy resource name resolvable for exports['qbbusinesses'] callers.
 provide 'qbbusinesses'
+-- The mechanic job lives here now; keep the legacy mechanic resource names resolvable.
+provide 'qb-mechanicjob'
+provide 'qbmechanic'
 author 'qbcore2'
 version '1.0.0'
 

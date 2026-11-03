@@ -51,6 +51,14 @@ Mechanic.cosmetics = {
     consume = nil,                    -- e.g. { item = 'spraycan', amount = 1 }
 }
 
+-- Server-side limits for the legacy qb-mechanicjob:server:SaveVehicleProps event (jobs/mechanic/props.lua).
+Mechanic.propsSave = {
+    distance = 8.0,        -- the caller must be within this range of a vehicle carrying the plate
+    maxBytes = 16384,
+    cooldown = 2000,       -- ms between accepted saves per player
+    grantLifetime = 60000, -- ms after a finished respray/bumper service in which that result may be saved
+}
+
 -- Passive wear is local to the current driver. It uses native vehicle health,
 -- so standard GTA collision damage and this additional RP wear coexist.
 Mechanic.damage = {

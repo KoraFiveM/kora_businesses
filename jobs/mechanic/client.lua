@@ -232,6 +232,9 @@ RegisterNetEvent('qbbusinesses:client:serviceApplied', function(action, netId, p
         notify('Vehicle stabilised. It still needs a full garage repair.', 'success')
     elseif action == 'paint' then
         SetVehicleColours(vehicle, payload.primary, payload.secondary)
+        TriggerServerEvent('qb-mechanicjob:server:SaveVehicleProps', {
+            plate = GetVehicleNumberPlateText(vehicle), color1 = payload.primary, color2 = payload.secondary,
+        })
         notify('Respray completed.', 'success')
     elseif action == 'bumpers' then
         SetVehicleModKit(vehicle, 0)
@@ -240,6 +243,10 @@ RegisterNetEvent('qbbusinesses:client:serviceApplied', function(action, netId, p
             local value = math.min(entry.value, count - 1)
             SetVehicleMod(vehicle, entry.type, value >= 0 and value or -1, false)
         end
+        TriggerServerEvent('qb-mechanicjob:server:SaveVehicleProps', {
+            plate = GetVehicleNumberPlateText(vehicle),
+            modFrontBumper = GetVehicleMod(vehicle, 1), modRearBumper = GetVehicleMod(vehicle, 2),
+        })
         notify('Bumper customisation completed.', 'success')
     end
 end)

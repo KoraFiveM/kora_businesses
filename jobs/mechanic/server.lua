@@ -43,7 +43,7 @@ local function canPerform(src, action, vehicle)
 
     if action == 'fullRepair' then
         if not isAutomotive or isRoadside then return false, 'Only a qualified mechanic can complete a full repair.' end
-        if not nearGarage(vehicle) then return false, 'A full repair must be completed in a Mechanicured garage bay.' end
+        if not nearGarage(vehicle) then return false, 'A full repair must be completed in a configured garage bay.' end
         return true
     end
     if action == 'roadsideRepair' then
@@ -113,6 +113,9 @@ RegisterNetEvent('qbbusinesses:server:serviceCompleted', function(permitId, payl
     if cost then
         local removed, err = exports.kora_core:removeItem(src, cost.item, cost.amount or 1, nil, 'vehicle service')
         if not removed then return notify(src, ('Required item missing: %s.'):format(err or cost.item), 'error') end
+    end
+    if Mechanic.grantCosmetics and (permit.action == 'paint' or permit.action == 'bumpers') then
+        Mechanic.grantCosmetics(src, vehicle, permit.action, payload)
     end
     TriggerClientEvent('qbbusinesses:client:serviceApplied', src, permit.action, permit.netId, payload)
 end)

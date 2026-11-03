@@ -13,6 +13,11 @@ Config = Kora.config.define({
                 label = 'Mechanic job',
                 description = 'Load the mechanic job (damage wear, repairs, permits).' .. RESTART,
             }),
+            persistCosmetics = Kora.config.boolean(true, {
+                label = 'Save mechanic resprays and bumpers',
+                live = true, scope = 'server',
+                description = 'Store the result of a finished respray or bumper service on the vehicle so it survives garaging. Off: those changes only last until the car is stored.',
+            }),
         },
         taxi = {
             enabled = Kora.config.boolean(true, {
@@ -79,7 +84,7 @@ local jobList = {
     {
         name = 'mechanic',
         filepaths = {
-            server = { 'jobs/mechanic/server.lua' },
+            server = { 'jobs/mechanic/server.lua', 'jobs/mechanic/props.lua' },
             client = { 'jobs/mechanic/client.lua' },
             shared = { 'jobs/mechanic/shared.lua' },
         },
