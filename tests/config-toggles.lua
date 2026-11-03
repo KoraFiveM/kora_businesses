@@ -4,7 +4,7 @@ local root = debug.getinfo(1, 'S').source:sub(2):match('(.*/)') .. '../'
 local libRoot = os.getenv('KORA_LIB_ROOT') or root .. '../kora_lib'
 local makeConfig = dofile(libRoot .. '/modules/config/consumer.lua')
 
-local JOBS = { 'mechanic', 'taxi', 'garbage', 'recycle', 'tow', 'cctv', 'hotdog' }
+local JOBS = { 'mechanic', 'taxi', 'garbage', 'recycle', 'tow', 'cctv', 'hotdog', 'news' }
 local checks = 0
 local function check(value, label)
     assert(value, label)
@@ -49,13 +49,17 @@ local function has(list, value)
     return false
 end
 
--- 1. Defaults: every job loads except hotdog (D3).
+-- 1. Defaults: every job loads except hotdog and news (D3).
 do
     local env, required = boot({ server = true })
     for _, name in ipairs(JOBS) do
         check(type(env.Config.jobs[name].enabled) == 'boolean', name .. ' has a toggle')
     end
     check(env.Config.jobs.hotdog.enabled == false, 'hotdog is off by default')
+    check(env.Config.jobs.news.enabled == false and not has(required, 'jobs/news/server.lua')
+        and not has(required, 'jobs/news/shared.lua'), 'news is off by default and not loaded')
+    check(env.Config.jobs.news.jobName == 'reporter' and env.Config.jobs.news.equipmentCooldownSeconds == 300
+        and env.Config.jobs.news.maxActiveVehicles == 1, 'news defaults match the plan (D4)')
     for _, name in ipairs({ 'mechanic', 'taxi', 'garbage', 'recycle', 'tow', 'cctv' }) do
         check(has(required, 'jobs/' .. name .. '/server.lua') and has(required, 'jobs/' .. name .. '/shared.lua'),
             name .. ' loads by default')
@@ -74,11 +78,12 @@ end
 -- ran before the override was merged).
 do
     local env, required, _, printed = boot({ server = true, files = {
-        ['businesses.config.local.lua'] = 'return { jobs = { taxi = { enabled = false }, hotdog = { enabled = true } } }',
+        ['businesses.config.local.lua'] = 'return { jobs = { taxi = { enabled = false }, hotdog = { enabled = true }, news = { enabled = true } } }',
     } })
     check(env.Config.jobs.taxi.enabled == false and env.Config.jobs.hotdog.enabled == true, 'override merged')
     check(not has(required, 'jobs/taxi/server.lua') and not has(required, 'jobs/taxi/shared.lua'), 'disabled taxi is not loaded')
     check(has(required, 'jobs/hotdog/server.lua') and has(required, 'jobs/hotdog/config.lua'), 'enabled hotdog is loaded')
+    check(has(required, 'jobs/news/server.lua') and has(required, 'jobs/news/shared.lua'), 'enabled news is loaded')
     check(has(required, 'jobs/garbage/server.lua'), 'untouched jobs keep loading')
     local skipped = false
     for _, line in ipairs(printed) do if line:find('taxi is disabled', 1, true) then skipped = true end end
@@ -87,11 +92,12 @@ end
 
 -- 3. The legacy standalone resources win while they run (same callbacks and events).
 do
-    local env, required, _, printed = boot({ server = true, running = { kora_taxi = 'started', kora_hotdogjob = 'starting' },
-        files = { ['businesses.config.local.lua'] = 'return { jobs = { hotdog = { enabled = true } } }' } })
+    local env, required, _, printed = boot({ server = true, running = { kora_taxi = 'started', kora_hotdogjob = 'starting', kora_newsjob = 'started' },
+        files = { ['businesses.config.local.lua'] = 'return { jobs = { hotdog = { enabled = true }, news = { enabled = true } } } ' } })
     check(env.Config.jobs.taxi.enabled == true, 'config still says enabled')
     check(not has(required, 'jobs/taxi/server.lua'), 'taxi steps aside for a running kora_taxi')
     check(not has(required, 'jobs/hotdog/server.lua'), 'hotdog steps aside for a running kora_hotdogjob')
+    check(not has(required, 'jobs/news/server.lua'), 'news steps aside for a running kora_newsjob')
     local mentioned = false
     for _, line in ipairs(printed) do if line:find('kora_taxi', 1, true) then mentioned = true end end
     check(mentioned, 'the conflict is logged')

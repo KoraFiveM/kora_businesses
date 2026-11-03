@@ -9,6 +9,10 @@ which jobs it loaded, so client and server always agree.
 | --- | --- | --- |
 | `jobs.{mechanic,taxi,garbage,recycle,tow,cctv}.enabled` | `true` | |
 | `jobs.hotdog.enabled` | `false` | Not running on the test server today. |
+| `jobs.news.enabled` | `false` | Not running today (the old kora_newsjob checked for a `news` job that does not exist). |
+| `jobs.news.jobName` | `reporter` | The job that can use the news garage, shop and camera. |
+| `jobs.news.equipmentCooldownSeconds` | `300` | Per reporter and item: how soon the same equipment can be taken again; also the minimum gap between stocked garage vehicles. |
+| `jobs.news.maxActiveVehicles` | `1` | Garage vehicles one reporter can have out; store one (target option at the garage) to take another. Applies live. |
 | `jobs.mechanic.persistCosmetics` | `true` | Store the result of a finished respray/bumper service on the vehicle (applies live). |
 | `jobs.taxi.meter.enabled` | `true` | Fare meter screen (`qb-taxi:client:toggleMeter` / `enableMeter`). |
 | `jobs.taxi.npcFromOwnTaxi` | `true` | Start an NPC fare from the driver seat of any taxi (`qb-taxi:client:DoTaxiNpc`). |
@@ -18,7 +22,7 @@ which jobs it loaded, so client and server always agree.
 
 ## Running next to the old standalone resources
 
-`taxi` and `hotdog` replace the standalone `kora_taxi` and `kora_hotdogjob` resources. They use
+`taxi`, `hotdog` and `news` replace the standalone `kora_taxi`, `kora_hotdogjob` and `kora_newsjob` resources. They use
 the same callback and event names, so if one of those resources is already running the job here
 logs a message and steps aside. Stop the old resource (and remove it from `server.cfg`) to use
 the one in `kora_businesses`.
@@ -42,3 +46,13 @@ the one in `kora_businesses`.
   the player has just completed through the permit flow: that exact colour pair / bumper pair may be saved once,
   within `Mechanic.propsSave.grantLifetime` ms. The mechanic client sends it automatically. Third-party tuning
   menus that used this event need their own server-side authority.
+
+## News
+
+* The job is whatever `jobs.news.jobName` says (`reporter`). Switch it on in `/config` and restart `kora_businesses`.
+* Equipment (camera, boom mic, hand mic) is taken at the shop: the server checks the job, the distance to the shop,
+  that the player does not already hold the item, and a per-item cooldown.
+* Garage vehicles are spawned by the server with a server-chosen plate. A trunk is stocked once per vehicle (and not
+  more often than the equipment cooldown). Use the **Store the Vehicle** target option at the garage to delete the
+  vehicle and take another; a reporter's vehicles are also removed when they leave the server.
+* The equipment/camera overlay ends when the player dies, loses the job, or closes the camera.

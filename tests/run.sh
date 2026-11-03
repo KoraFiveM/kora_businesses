@@ -15,3 +15,4 @@ lua tests/taxi-meter.lua
 if command -v node >/dev/null 2>&1; then node tests/taxi-meter.test.js; fi
 lua tests/config-toggles.lua
 lua tests/tow.lua
+lua tests/news.lua

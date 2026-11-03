@@ -69,6 +69,26 @@ Config = Kora.config.define({
                 label = 'CCTV job', description = 'Load the CCTV engineer job.' .. RESTART,
             }),
         },
+        news = {
+            enabled = Kora.config.boolean(false, {
+                label = 'News job',
+                description = 'Load the news reporter job (garage vehicles, camera and microphones). Off by default; do not run it together with the old kora_newsjob resource.' .. RESTART,
+            }),
+            jobName = Kora.config.string('reporter', {
+                label = 'News job name',
+                description = 'The job whose employees can use the news garage, equipment shop and camera.' .. RESTART,
+            }),
+            equipmentCooldownSeconds = Kora.config.integer(300, {
+                label = 'News equipment cooldown (seconds)', min = 0, max = 86400,
+                scope = 'server',
+                description = 'How long a reporter must wait before taking the same equipment again, or before a new garage vehicle is stocked.' .. RESTART,
+            }),
+            maxActiveVehicles = Kora.config.integer(1, {
+                label = 'News vehicles per reporter', min = 1, max = 10,
+                live = true, scope = 'server',
+                description = 'How many garage vehicles one reporter can have out at once. Store one at the garage to take another.',
+            }),
+        },
         hotdog = {
             enabled = Kora.config.boolean(false, {
                 label = 'Hotdog job',
@@ -128,6 +148,15 @@ local jobList = {
             server = { 'jobs/cctv/server.lua' },
             client = { 'jobs/cctv/client.lua' },
             shared = { 'jobs/cctv/shared.lua' },
+        },
+    },
+    {
+        name = 'news',
+        conflicts = { 'kora_newsjob' },
+        filepaths = {
+            server = { 'jobs/news/server.lua' },
+            client = { 'jobs/news/client.lua', 'jobs/news/spawner.lua', 'jobs/news/camera.lua' },
+            shared = { 'jobs/news/shared.lua' },
         },
     },
     {

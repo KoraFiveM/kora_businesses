@@ -73,5 +73,19 @@ return {
             keymapping = {
             gkey = 'Let go of hotdog stand',
         }
-    }
+    },
+    news = {
+        text = {
+            vehicle = "Weazel News Vehicles",
+            heli = "Weazel News Helicopters",
+            vehicles = "Vehicles",
+            helicopters = "Helicopters",
+            store_vehicle = "Store the Vehicle",
+            enter = "Enter",
+            go_outside = "Go outside",
+            take_camera = "Take news camera",
+            take_boom_mic = "Take boom mic",
+            take_hand_mic = "Take hand mic",
+        },
+    },
 }
