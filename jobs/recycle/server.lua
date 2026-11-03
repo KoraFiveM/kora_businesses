@@ -109,6 +109,12 @@ local function nearHandIn(src)
     return Recycle.HandInAtSellPed ~= false and Kora.distance.player(src, Recycle.SellPed, distance) or false
 end
 
+-- Strict entity lockdown deletes networked entities a client creates, so the carried box is only networked
+-- when the config asks for it and this server's lockdown mode lets clients create script entities.
+local function networkedCarryAllowed()
+    return Recycle.CarryPropNetworked == true and GetConvar('sv_entityLockdown', 'inactive') ~= 'strict'
+end
+
 Kora.callback.register('kora_businesses:recycle:pickupPackage', function(src, index)
     if type(index) ~= 'number' or index % 1 ~= 0 then return false end
     local pickup = Recycle.PickupLocations[index]
@@ -118,7 +124,7 @@ Kora.callback.register('kora_businesses:recycle:pickupPackage', function(src, in
     if pending and GetGameTimer() - pending < (Recycle.PendingPickupTimeout or 600000) then return false end
     if not Kora.distance.player(src, pickup.loc, 3.0) then return false end
     pendingPackages[src] = GetGameTimer()
-    return true
+    return { networked = networkedCarryAllowed() }
 end)
 
 RegisterNetEvent('kora_businesses:recycle:cancelPickup', function()

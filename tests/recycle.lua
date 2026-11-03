@@ -2,10 +2,14 @@ local root = debug.getinfo(1, 'S').source:sub(2):match('(.*/)') .. '../'
 local callbacks, events, hooks = {}, {}, {}
 local now, additions, zone = 0, 0, 'drop'
 local reentered = false
+local lockdown, networkedConfig = 'strict', true
+local function granted(result) return type(result) == 'table' end
 local env
 env = setmetatable({
     source = 1,
-    Recycle = { DropLocation = 'drop', DeliveryActionDuration = 5000, PickupLocations = { { loc = 'pickup' } } },
+    Recycle = setmetatable({ DropLocation = 'drop', DeliveryActionDuration = 5000, PickupLocations = { { loc = 'pickup' } } },
+        { __index = function(_, key) if key == 'CarryPropNetworked' then return networkedConfig end end }),
+    GetConvar = function(name, default) if name == 'sv_entityLockdown' then return lockdown end return default end,
     Kora = {
         callback = { register = function(name, fn) callbacks[name] = fn end },
         distance = { player = function(_, coords) return zone == coords end },
@@ -35,9 +39,11 @@ local pickup = assert(callbacks['kora_businesses:recycle:pickupPackage'])
 assert(pickup(1, 1) == false, 'pickup requires a visit to the configured package location')
 zone = 'pickup'
 assert(pickup(1, '1') == false and pickup(1, 1.5) == false and pickup(1, 2) == false)
-assert(pickup(1, 1) == true and pickup(1, 1) == false, 'only one package can be pending')
+local first = pickup(1, 1)
+assert(granted(first) and pickup(1, 1) == false, 'only one package can be pending')
+assert(first.networked == false, 'strict entity lockdown never asks the client for a networked carry box')
 now = now + 600001
-assert(pickup(1, 1) == true, 'a stale authorization is replaced')
+assert(granted(pickup(1, 1)), 'a stale authorization is replaced')
 zone = 'drop'
 redeem()
 assert(additions == 0, 'an immediate hand-in cannot bypass the server interval')
@@ -60,7 +66,7 @@ for _, clear in ipairs({
     function() hooks['QBCore:Server:OnPlayerUnload'](1) end,
 }) do
     zone = 'pickup'
-    assert(pickup(1, 1) == true)
+    assert(granted(pickup(1, 1)))
     clear()
     now, zone = now + 5000, 'drop'
     redeem()
@@ -69,14 +75,14 @@ end
 -- The drop-off ped (SellPed) is an accepted hand-in spot too.
 env.Recycle.SellPed = 'sellped'
 zone = 'pickup'
-assert(pickup(1, 1) == true)
+assert(granted(pickup(1, 1)))
 now, zone = now + 5000, 'sellped'
 redeem()
 assert(additions > received, 'hand-in at the drop-off ped pays out')
 env.Recycle.HandInAtSellPed = false
 received = additions
 zone = 'pickup'
-assert(pickup(1, 1) == true)
+assert(granted(pickup(1, 1)))
 now, zone = now + 5000, 'sellped'
 redeem()
 assert(additions == received, 'ped hand-in can be switched off')
@@ -124,4 +130,19 @@ owned = {}
 assert(trySell('metalscrap', 1) == 0, 'cannot sell materials the player does not own')
 owned, nearSeller = { { amount = 5 } }, false
 assert(trySell('metalscrap', 1) == 0, 'selling requires proximity to the sell ped')
+
+-- Networked carry box: only when configured and the server lockdown mode lets clients create script entities.
+local function grantFor(mode, configured)
+    lockdown, networkedConfig = mode, configured
+    zone = 'pickup'
+    events['kora_businesses:recycle:cancelPickup']()
+    local result = pickup(1, 1)
+    events['kora_businesses:recycle:cancelPickup']()
+    return result
+end
+assert(grantFor('relaxed', true).networked == true, 'relaxed lockdown allows a networked box')
+assert(grantFor('inactive', true).networked == true, 'no lockdown allows a networked box')
+assert(grantFor('strict', true).networked == false, 'strict lockdown forces a local box')
+assert(grantFor('relaxed', false).networked == false, 'networked box is opt-in')
+
 print('qbbusinesses recycling: pickup authority, timing, proximity, replay, lifecycle and sell amount regression passed')

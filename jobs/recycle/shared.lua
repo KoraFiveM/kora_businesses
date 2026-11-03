@@ -20,7 +20,10 @@ Recycle = {
 	HandInAnim              = false,
 	-- Carry prop shown in the player's hands between "Get Package" and "Hand In Package".
 	PickupBoxModel          = 'hei_prop_heist_box', -- any valid base-game (or streamed) prop model
-	CarryPropNetworked      = true,                 -- true: other players see the box; false: local-only prop
+	-- true: other players see the box. Needs sv_entityLockdown "inactive" or "relaxed": under "strict" the server
+	-- deletes client-created networked props, so it is ignored there and a local prop is used instead.
+	CarryPropNetworked      = false,
+	CarryPropVerifyDelay    = 1000, -- ms after pickup to check a networked box still exists (falls back to a local box)
 	CarryBone               = 60309,                -- ped bone id: 60309 = left hand (the box_carry pose holds the box in both hands from here; 57005 = right hand)
 	CarryOffset             = vector3(0.025, 0.08, 0.255),     -- attach offset relative to the bone (box_carry placement for hei_prop_heist_box)
 	CarryRotation           = vector3(-145.0, 290.0, 0.0),     -- attach rotation relative to the bone

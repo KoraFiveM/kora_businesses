@@ -43,6 +43,7 @@ local function sellMaterials()
                     entry.action = {
                         id = sellAction,
                         label = Kora.lang('recycle.text.sell'),
+                        submitLabel = Kora.lang('recycle.text.sell_submit'),
                         fields = {
                             {
                                 id = 'amount', label = Kora.lang('recycle.text.amount'), type = 'number',

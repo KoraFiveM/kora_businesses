@@ -52,6 +52,7 @@ assert(list['material:metalscrap'].description:find('recycle.text.price:2', 1, t
 local field = list['material:metalscrap'].action.fields[1]
 assert(field.min == 1 and field.max == 12 and field.default == 1, 'amount limited to 1..owned, defaulting to 1')
 assert(list['material:glass'].action.fields[1].max == 500, 'form maximum honours MaxSellPerRequest')
+assert(list['material:metalscrap'].action.submitLabel == 'recycle.text.sell_submit', 'sell form submit button is labelled from the locale')
 
 local function act(id, amount)
     return app.onAction('kora_businesses:recycle:sellItem', { itemId = id, value = { amount = amount } })

@@ -19,6 +19,7 @@ return {
             owned = "You have: %s",
             amount = "Amount",
             sell = "Sell",
+            sell_submit = "Sell",
         },
         error = {
             you_have_clocked_out = "You Have Clocked Out",
