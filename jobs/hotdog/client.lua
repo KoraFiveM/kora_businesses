@@ -41,10 +41,12 @@ local pushBlockedControls = { 244, 23 }
 
 local STOCK_APP_ID = 'qb-hotdogjob:stock'
 
+local HOTDOG_ICON = 'nui://kora_businesses/jobs/hotdog/icon.png'
+
 local QUALITY_META = {
-    common = { label = 'Common', image = '/icon.png', color = '#d62828' },
-    rare = { label = 'Rare', image = '/icon.png', color = '#f77f00' },
-    exotic = { label = 'Exotic', image = '/icon.png', color = '#2a9d5b' },
+    common = { label = 'Common', image = HOTDOG_ICON, color = '#d62828' },
+    rare = { label = 'Rare', image = HOTDOG_ICON, color = '#f77f00' },
+    exotic = { label = 'Exotic', image = HOTDOG_ICON, color = '#2a9d5b' },
 }
 
 local function notify(message, notifyType)

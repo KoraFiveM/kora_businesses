@@ -31,6 +31,7 @@ client_scripts {
 files {
     'locales/**.lua',
     'jobs/**/**.lua',
+    'jobs/hotdog/icon.png',
     'sql/**.sql',
     'docs/**.md',
     'init.lua'

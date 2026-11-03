@@ -1,5 +1,7 @@
 return {
-    ["Config"] = {
-        ["Taxi"] = true,
+    ["jobs"] = {
+        ["taxi"] = {
+            ["enabled"] = true,
+        },
     },
 }

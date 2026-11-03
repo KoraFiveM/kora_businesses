@@ -10,4 +10,5 @@ lua tests/hotdog.lua
 lua tests/mechanic.lua
 lua tests/taxi-authorization.lua
 lua tests/taxi.lua
+lua tests/config-toggles.lua
 lua tests/tow.lua
