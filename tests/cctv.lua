@@ -8,7 +8,7 @@ local env = setmetatable({
     Kora = {
         shared = { get = function() return true end },
         callback = { register = function(name, fn) callbacks[name] = fn end },
-        sql = { query = function() reads = reads + 1; return {} end },
+        sql = { NULL = {}, query = function() reads = reads + 1; return {} end },
     },
     exports = setmetatable({
         kora_core = { getJob = function() return job end },
@@ -33,14 +33,18 @@ assert(loadfile(root .. 'jobs/cctv/shared.lua', 't', env))()
 env.Cctv.minimumEngineerGrade = 2
 assert(loadfile(root .. 'jobs/cctv/server.lua', 't', env))()
 env.Kora.sql.ready = function() return true end
-env.Kora.sql.migrateFiles = function(resource, migrations)
-    assert(resource == 'kora_businesses' and migrations[1].version == 2)
-    assert(migrations[1].name == 'cctv_callouts' and migrations[1].file == 'sql/001_cctv_callouts.sql')
-    assert(io.open(root .. migrations[1].file, 'r')):close()
-    return true
+local ensured
+env.Kora.sql.ensureTables = function(specs)
+    ensured = specs
+    return {}
 end
 assert(coroutine.resume(threads[1]))
-assert(coroutine.status(threads[1]) == 'dead', 'CCTV schema migration must finish')
+assert(coroutine.status(threads[1]) == 'dead', 'CCTV schema setup must finish')
+assert(ensured == env.QBBusinessesCctvSchema and #ensured == 2, 'CCTV schema must be ensured')
+assert(ensured[1].name == 'qbbusinesses_cctv_callouts' and ensured[2].name == 'qbbusinesses_cctv_systems')
+local business
+for _, column in ipairs(ensured[1].columns) do if column.name == 'business' then business = column end end
+assert(business and business.modify == true and business.null == true, 'callout business column must stay nullable')
 local callout = { id = 'test', status = 'open', issue = 'camera', business = 'shop', requester = 2, charge = 0 }
 api.getCctvCallouts().test = callout
 local function reject(candidate)

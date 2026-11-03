@@ -31,7 +31,6 @@ client_scripts {
 files {
     'locales/**.lua',
     'jobs/**/**.lua',
-    'sql/**.sql',
     'docs/**.md',
     'init.lua'
 }

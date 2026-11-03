@@ -1,8 +1,53 @@
+QBBusinessesCctvSchema = {
+    {
+        name = 'qbbusinesses_cctv_callouts',
+        columns = {
+            { name = 'id', type = 'varchar(40)' },
+            { name = 'business', type = 'varchar(50)', null = true, default = Kora.sql.NULL, modify = true },
+            { name = 'customer_type', type = 'varchar(20)', default = 'business' },
+            { name = 'citizenid', type = 'varchar(50)', null = true, default = Kora.sql.NULL },
+            { name = 'issue', type = 'enum', values = { 'camera', 'nvr' } },
+            { name = 'camera_id', type = 'varchar(80)', null = true, default = Kora.sql.NULL },
+            { name = 'nvr_id', type = 'varchar(80)', null = true, default = Kora.sql.NULL },
+            { name = 'requester', type = 'int' },
+            { name = 'engineer', type = 'int', null = true, default = Kora.sql.NULL },
+            { name = 'charge', type = 'int', default = 0 },
+            { name = 'repair_price', type = 'int', null = true, default = Kora.sql.NULL },
+            { name = 'status', type = 'varchar(20)' },
+            { name = 'coords', type = 'text', null = true, default = Kora.sql.NULL },
+            { name = 'created_at', type = 'timestamp', default = { raw = 'CURRENT_TIMESTAMP' } },
+            { name = 'completed_at', type = 'timestamp', null = true, default = Kora.sql.NULL },
+        },
+        primary = { 'id' },
+        indexes = {
+            { name = 'qbbusinesses_cctv_callouts_business', columns = { 'business' } },
+            { name = 'qbbusinesses_cctv_callouts_status', columns = { 'status' } },
+        },
+    },
+    {
+        name = 'qbbusinesses_cctv_systems',
+        columns = {
+            { name = 'id', type = 'varchar(80)' },
+            { name = 'installer_business', type = 'varchar(50)' },
+            { name = 'business', type = 'varchar(50)' },
+            { name = 'business_label', type = 'varchar(100)', null = true, default = Kora.sql.NULL },
+            { name = 'camera_count', type = 'int', default = 0 },
+            { name = 'status', type = 'varchar(20)', default = 'online' },
+            { name = 'security_level', type = 'int', default = 1 },
+            { name = 'intrusion_level', type = 'int', default = 0 },
+            { name = 'created_at', type = 'timestamp', default = { raw = 'CURRENT_TIMESTAMP' } },
+        },
+        primary = { 'id' },
+        indexes = {
+            { name = 'qbbusinesses_cctv_systems_installer', columns = { 'installer_business' } },
+        },
+    },
+}
+
 local callouts = {}
 local nextCalloutId = 0
 local hackSessions = {}
 local repairSessions = {}
-local RESOURCE = GetCurrentResourceName()
 
 local function setBucket(src, bucket)
     SetPlayerRoutingBucket(src, bucket)
@@ -45,8 +90,16 @@ CreateThread(function()
         print('^1[qbbusinesses]^7 qbsql was not ready; CCTV persistence is disabled.')
         return
     end
-    local migrated, err = Kora.sql.migrateFiles(RESOURCE, {{ version = 2, name = 'cctv_callouts', file = 'sql/001_cctv_callouts.sql' }})
-    if not migrated then print(('^1[qbbusinesses]^7 CCTV migration failed: %s'):format(err or 'unknown error')) end
+    local reports, err = Kora.sql.ensureTables(QBBusinessesCctvSchema)
+    if err then
+        print(('^1[qbbusinesses]^7 CCTV schema failed: %s'):format(err))
+        return
+    end
+    for _, report in ipairs(reports or {}) do
+        for _, warning in ipairs(report.warnings or {}) do
+            print(('^3[qbbusinesses]^7 CCTV schema %s: %s'):format(report.table, warning))
+        end
+    end
 end)
 
 local function amount(value)
