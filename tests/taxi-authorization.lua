@@ -4,7 +4,8 @@ local callbacks, events = {}, {}
 local payments = 0
 local env = {}
 for name, value in pairs(_G) do env[name] = value end
-env.Config, env.Taxi, env.Globals = nil, nil, {}
+env.Taxi, env.Globals = nil, {}
+env.Config = { jobs = { taxi = { requireOnDuty = true, minSpeedMps = 45.0, farePerMeter = 0.2 } } }
 env.vector3 = function(x, y, z) return { x = x, y = y, z = z } end
 env.vector4 = function(x, y, z, w) return { x = x, y = y, z = z, w = w } end
 env.Core, env.CoreInternal = { util = {}, player = {} }, { player = { COLUMN_FOR = {} } }
@@ -21,6 +22,7 @@ env.exports = { kora_core = {
     addMoney = function() payments = payments + 1 end,
 } }
 env.RegisterNetEvent = function(name, fn) events[name] = fn end
+env.GetCurrentResourceName = function() return 'kora_businesses' end
 assert(loadfile(root .. 'jobs/taxi/shared.lua', 't', env))()
 assert(loadfile(root .. 'jobs/taxi/server.lua', 't', env))()
 local request = assert(callbacks['qb-taxi:getPickupLocation'])
@@ -35,6 +37,15 @@ local snapshot = env.Core.player.getPlayer(1)
 assert(snapshot.job and not snapshot.PlayerData, 'test uses the actual modern flat snapshot')
 local route = request(1)
 assert(route and route.pickup and route.dropoff, 'authorized flat snapshot can request a trip')
+player.PlayerData.job.onduty = false
+assert(request(1) == nil, 'an off-duty taxi driver is rejected')
+player.PlayerData.job.onduty = true
+assert(request(1), 'an on-duty taxi driver is accepted')
+env.Config.jobs.taxi.requireOnDuty = false
+player.PlayerData.job.onduty = false
+assert(request(1), 'requireOnDuty = false accepts an off-duty driver')
+env.Config.jobs.taxi.requireOnDuty = true
+player.PlayerData.job.onduty = true
 player.PlayerData.job.name = 'unemployed'
 assert(request(1) == nil, 'job changes are read afresh')
 env.source = 1

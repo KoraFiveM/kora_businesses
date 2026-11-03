@@ -68,6 +68,17 @@ local function spawnPickup()
     return true
 end
 
+local function awaitNetVehicle(netId)
+    local deadline = GetGameTimer() + 5000
+    while GetGameTimer() < deadline do
+        if NetworkDoesNetworkIdExist(netId) then
+            local entity = NetToVeh(netId)
+            if entity ~= 0 and DoesEntityExist(entity) then return entity end
+        end
+        Wait(50)
+    end
+end
+
 RegisterNetEvent('qb-taxi:client:spawnPickup', function()
     if source ~= 65535 then return end
     spawnPickup()
@@ -77,12 +88,25 @@ Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0
     {
         label = 'Spawn Taxi',
         action = function()
-            taxi = Kora.entities.create('taxi', Taxi.parkLocation, {})
+            -- The server spawns the taxi as a networked vehicle so other players see it.
+            local netId = Kora.callback.trigger('qb-taxi:spawnTaxi')
+            if not netId then
+                Kora.notify.send({ title = 'Taxi', message = 'You must be on duty as a taxi driver.', type = 'error' })
+                return
+            end
+            taxi = awaitNetVehicle(netId)
+            if not taxi then
+                TriggerServerEvent('qb-taxi:returnTaxi')
+                Kora.notify.send({ title = 'Taxi', message = 'Unable to spawn the taxi. Please try again.', type = 'error' })
+                return
+            end
             ownsTaxi = true
+            Kora.entities.requestControl(taxi)
             TaskWarpPedIntoVehicle(PlayerPedId(), taxi, -1)
             SetVehicleNumberPlateText(taxi, "TAXI")
             if not spawnPickup() then
-                Kora.entities.remove(taxi)
+                TriggerServerEvent('qb-taxi:returnTaxi')
+                ownsTaxi = false
                 taxi = nil
             end
         end,
@@ -93,7 +117,7 @@ Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0
     {
         label = 'Return Taxi',
         action = function()
-            if ownsTaxi then Kora.entities.remove(taxi) end
+            if ownsTaxi then TriggerServerEvent('qb-taxi:returnTaxi') end
             ownsTaxi = false
             TriggerEvent('qbtaxi:client:meterTripFinished')
             taxi = nil
