@@ -114,13 +114,8 @@ call-out and repair amount are credited to the CCTV society account through
 
 ## Data and persistence
 
-The SQL migration is:
-
-```text
-sql/001_cctv_callouts.sql
-```
-
-It creates tables for:
+The tables are created at startup from the schema in `jobs/cctv/server.lua`
+(`QBBusinessesCctvSchema`, applied with `Kora.sql.ensureTables`). It covers:
 
 - `qbbusinesses_cctv_callouts`
 - `qbbusinesses_cctv_systems`
