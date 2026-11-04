@@ -41,7 +41,7 @@ end
 assert(coroutine.resume(threads[1]))
 assert(coroutine.status(threads[1]) == 'dead', 'CCTV schema setup must finish')
 assert(ensured == env.QBBusinessesCctvSchema and #ensured == 2, 'CCTV schema must be ensured')
-assert(ensured[1].name == 'qbbusinesses_cctv_callouts' and ensured[2].name == 'qbbusinesses_cctv_systems')
+assert(ensured[1].name == 'kora_businesses_cctv_callouts' and ensured[2].name == 'kora_businesses_cctv_systems')
 local business
 for _, column in ipairs(ensured[1].columns) do if column.name == 'business' then business = column end end
 assert(business and business.modify == true and business.null == true, 'callout business column must stay nullable')

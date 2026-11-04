@@ -1,6 +1,6 @@
 QBBusinessesCctvSchema = {
     {
-        name = 'qbbusinesses_cctv_callouts',
+        name = 'kora_businesses_cctv_callouts',
         columns = {
             { name = 'id', type = 'varchar(40)' },
             { name = 'business', type = 'varchar(50)', null = true, default = Kora.sql.NULL, modify = true },
@@ -20,12 +20,12 @@ QBBusinessesCctvSchema = {
         },
         primary = { 'id' },
         indexes = {
-            { name = 'qbbusinesses_cctv_callouts_business', columns = { 'business' } },
-            { name = 'qbbusinesses_cctv_callouts_status', columns = { 'status' } },
+            { name = 'kora_businesses_cctv_callouts_business', columns = { 'business' } },
+            { name = 'kora_businesses_cctv_callouts_status', columns = { 'status' } },
         },
     },
     {
-        name = 'qbbusinesses_cctv_systems',
+        name = 'kora_businesses_cctv_systems',
         columns = {
             { name = 'id', type = 'varchar(80)' },
             { name = 'installer_business', type = 'varchar(50)' },
@@ -39,7 +39,7 @@ QBBusinessesCctvSchema = {
         },
         primary = { 'id' },
         indexes = {
-            { name = 'qbbusinesses_cctv_systems_installer', columns = { 'installer_business' } },
+            { name = 'kora_businesses_cctv_systems_installer', columns = { 'installer_business' } },
         },
     },
 }
@@ -165,7 +165,7 @@ local function accountKey(account)
 end
 
 local function systemSecurity(targetId)
-    local row = Kora.sql.single('SELECT `security_level`, `intrusion_level` FROM `qbbusinesses_cctv_systems` WHERE `id` = ?', { targetId })
+    local row = Kora.sql.single('SELECT `security_level`, `intrusion_level` FROM `kora_businesses_cctv_systems` WHERE `id` = ?', { targetId })
     if not row then return 1 end
     return math.max(1, math.min(10, (tonumber(row.security_level) or 1) + (tonumber(row.intrusion_level) or 0)))
 end
@@ -232,7 +232,7 @@ Kora.callback.register('qbbusinesses:cctv:laptopData', function(src)
     if not playerJob(src) then return nil, 'You must be an on-duty CCTV engineer.' end
     local result = {}
     for _, callout in pairs(callouts) do result[#result + 1] = callout end
-    local systems = Kora.sql.query('SELECT `id`, `business`, `business_label`, `camera_count`, `status` FROM `qbbusinesses_cctv_systems` WHERE `installer_business` = ?', { Cctv.job }) or {}
+    local systems = Kora.sql.query('SELECT `id`, `business`, `business_label`, `camera_count`, `status` FROM `kora_businesses_cctv_systems` WHERE `installer_business` = ?', { Cctv.job }) or {}
     return { systems = systems, callouts = result, company = Cctv.job }
 end)
 
@@ -306,7 +306,7 @@ Kora.callback.register('qbbusinesses:cctv:finishHack', function(src, data)
     end
     local hacking = Kora.skills.get(src, Cctv.hacking.skill)
     local intrusion = hacking and math.max(1, math.floor((tonumber(hacking.level) or 1) / 10)) or 1
-    Kora.sql.update('UPDATE `qbbusinesses_cctv_systems` SET `intrusion_level` = LEAST(10, ?) WHERE `id` = ?', { intrusion, session.targetId })
+    Kora.sql.update('UPDATE `kora_businesses_cctv_systems` SET `intrusion_level` = LEAST(10, ?) WHERE `id` = ?', { intrusion, session.targetId })
     return true, { targetId = session.targetId }
 end)
 

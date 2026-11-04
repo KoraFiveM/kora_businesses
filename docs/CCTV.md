@@ -117,8 +117,8 @@ call-out and repair amount are credited to the CCTV society account through
 The tables are created at startup from the schema in `jobs/cctv/server.lua`
 (`QBBusinessesCctvSchema`, applied with `Kora.sql.ensureTables`). It covers:
 
-- `qbbusinesses_cctv_callouts`
-- `qbbusinesses_cctv_systems`
+- `kora_businesses_cctv_callouts`
+- `kora_businesses_cctv_systems`
 
 Call-out data is currently held in memory during runtime and the schema is
 ready for full call-out hydration/persistence.
