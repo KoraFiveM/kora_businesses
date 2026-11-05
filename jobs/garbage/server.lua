@@ -103,6 +103,7 @@ Kora.callback.register('qb-garbagejob:setTruck', function(source, vehicleNet)
     end
 
     job.vehicleNet = vehicleNet
+    pcall(function() exports.kora_vehiclekeys:giveKeys(source, 'GARBAGE') end)
     return true
 end)
 

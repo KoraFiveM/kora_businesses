@@ -307,8 +307,6 @@ local function spawnTruck()
         return
     end
 
-    TriggerEvent('qb-vehiclekeys:client:AddKeys', 'GARBAGE')
-
     garbage.route = route
     garbage.routeIndex = 1
     garbage.truckTargetAdded = false
