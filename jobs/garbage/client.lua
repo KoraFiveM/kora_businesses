@@ -245,7 +245,7 @@ local function addTruckTarget()
                 clearBag()
 
                 if DoesEntityExist(garbage.truck) then
-                    exports.kora_target:RemoveTargetEntity(garbage.truck)
+                    exports.kora_target:removeEntity(garbage.truck)
                     DeleteVehicle(garbage.truck)
                 end
 
@@ -374,7 +374,7 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
         clearBag()
 
         if DoesEntityExist(garbage.truck) then
-            exports.kora_target:RemoveTargetEntity(garbage.truck)
+            exports.kora_target:removeEntity(garbage.truck)
             DeleteVehicle(garbage.truck)
         end
 
@@ -407,7 +407,7 @@ AddEventHandler('onResourceStop', function(resource)
     clearBag()
 
     if garbage.truck and DoesEntityExist(garbage.truck) then
-        exports.kora_target:RemoveTargetEntity(garbage.truck)
+        exports.kora_target:removeEntity(garbage.truck)
         DeleteVehicle(garbage.truck)
     end
 end)
