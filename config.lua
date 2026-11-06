@@ -7,6 +7,7 @@ Config.Garbage = true
 Config.Recycle = true
 Config.Tow = true
 Config.Cctv = true
+Config.GarbageDepotRoute = true -- Garbage job: set a GPS route to the depot blip once every stop is done.
 Config.enable = {
     {
         name = 'mechanic',

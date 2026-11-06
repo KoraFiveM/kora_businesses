@@ -200,10 +200,16 @@ Kora.callback.register('qb-garbagejob:returnTruck', function(source, vehicleNet)
         return false
     end
 
+    if job.returning then return false end
+    job.returning = true
+
     local stops = #job.route
     local payment = stops * 50
 
-    if not exports.kora_core:addMoney(source, 'bank', payment, 'garbage-route') then return false end
+    if not exports.kora_core:addMoney(source, 'bank', payment, 'garbage-route') then
+        job.returning = nil
+        return false
+    end
 
     DeleteEntity(vehicle)
     onJob[source] = nil
