@@ -373,3 +373,20 @@ end)
 exports('getCctvCallouts', function()
     return callouts
 end)
+
+-- /cctvhack and /cctvrepair are client commands, and the client cannot publish chat suggestions
+-- reliably at load (the chat UI is not ready). Publish from the server when the chat UI reports in.
+local function suggestCommands(src)
+    if not src or src <= 0 then return end
+    TriggerClientEvent('chat:addSuggestion', src, '/cctvhack', 'Hack a CCTV system', { { name = 'targetId', help = 'CCTV system ID' } })
+    TriggerClientEvent('chat:addSuggestion', src, '/cctvrepair', 'Run a CCTV repair check', { { name = 'targetId', help = 'CCTV system ID' } })
+end
+
+AddEventHandler('chat:init', function()
+    suggestCommands(source)
+end)
+
+AddEventHandler('onResourceStart', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    for _, playerId in ipairs(GetPlayers()) do suggestCommands(tonumber(playerId)) end
+end)

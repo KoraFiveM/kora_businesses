@@ -17,12 +17,12 @@ dependency 'kora_skills'
 
 shared_scripts {
     '@kora_lib/init.lua',
-    '@kora_sql/init.lua',
     '@kora_core/init.lua',
     'config.lua',
 }
 
 server_scripts {
+    '@kora_sql/init.lua',
 }
 
 client_scripts {
@@ -30,7 +30,11 @@ client_scripts {
 
 files {
     'locales/**.lua',
-    'jobs/**/**.lua',
+    -- Clients get only client/shared job files; jobs/*/server.lua is read from
+    -- disk by the server's Kora.require and must never be listed here.
+    'jobs/*/client.lua',
+    'jobs/*/shared.lua',
+    'jobs/recycle/sales.lua',
     'docs/**.md',
     'init.lua'
 }

@@ -89,10 +89,11 @@ Kora.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, auth
     if not skillData(src) then return fail('qbskills is required.') end
     local won = Kora.rewards.generate(Hotdog.PrepareRewards)[1]
     local quality = won.name
-    local amount = Hotdog.batchSize(levelFor(src), quality)
+    local level = levelFor(src)
+    local amount = Hotdog.batchSize(level, quality)
 
     local stock = Stock[cid]
-    local capacity = Hotdog.Stock[quality].Max[4]
+    local capacity = Hotdog.Stock[quality].Max[math.min(level, 4)]
     local granted = math.min(amount, math.max(0, capacity - stock[quality]))
     stock[quality] = stock[quality] + granted
 

@@ -37,6 +37,13 @@ RegisterCommand('cctvrepair', function(_, args)
     CreateThread(function() repair(args[1]) end)
 end, false)
 
+local function suggestCommands()
+    TriggerEvent('chat:addSuggestion', '/cctvhack', 'Hack a CCTV system', { { name = 'targetId', help = 'CCTV system ID' } })
+    TriggerEvent('chat:addSuggestion', '/cctvrepair', 'Run a CCTV repair check', { { name = 'targetId', help = 'CCTV system ID' } })
+end
+suggestCommands()
+AddEventHandler('chat:init', suggestCommands)
+
 local function openLaptop()
     if active then return end
     active = true
