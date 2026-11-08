@@ -244,12 +244,58 @@ RegisterNetEvent('qbbusinesses:client:serviceApplied', function(action, netId, p
     end
 end)
 
-exports['qb-target']:AddGlobalVehicle({ options = {
-    -- kora_target invokes legacy `action` handlers inside a protected dispatch;
-    -- start a fresh coroutine because dialogs, callbacks and progress bars all
-    -- yield while the player works.
-    { icon = 'fas fa-wrench', label = 'Full garage repair', action = function(entity) CreateThread(function() beginService('fullRepair', entity) end) end, canInteract = canFullRepair, distance = Mechanic.interaction.distance },
-    { icon = 'fas fa-truck-pickup', label = 'Roadside stabilisation', action = function(entity) CreateThread(function() beginService('roadsideRepair', entity) end) end, canInteract = canRepair, distance = Mechanic.interaction.distance },
-    { icon = 'fas fa-paint-roller', label = 'Respray vehicle', action = function(entity) CreateThread(function() beginService('paint', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
-    { icon = 'fas fa-car', label = 'Customise bumpers', action = function(entity) CreateThread(function() beginService('bumpers', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
-} })
+-- kora_target invokes onSelect inside a protected dispatch; start a fresh
+-- coroutine because dialogs, callbacks and progress bars all yield.
+local function mechanicTargetOptions()
+    return {
+        { icon = 'fas fa-wrench', label = 'Full garage repair', onSelect = function(entity) CreateThread(function() beginService('fullRepair', entity) end) end, canInteract = canFullRepair, distance = Mechanic.interaction.distance },
+        { icon = 'fas fa-truck-pickup', label = 'Roadside stabilisation', onSelect = function(entity) CreateThread(function() beginService('roadsideRepair', entity) end) end, canInteract = canRepair, distance = Mechanic.interaction.distance },
+        { icon = 'fas fa-paint-roller', label = 'Respray vehicle', onSelect = function(entity) CreateThread(function() beginService('paint', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
+        { icon = 'fas fa-car', label = 'Customise bumpers', onSelect = function(entity) CreateThread(function() beginService('bumpers', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
+    }
+end
+
+-- Registration id from kora_target. Ids restart with each kora_target instance,
+-- so this is cleared when kora_target stops rather than removed later.
+local mechanicTargetId = nil
+
+local function unregisterTargets()
+    local id = mechanicTargetId
+    mechanicTargetId = nil
+    if id and GetResourceState('kora_target') == 'started' then
+        pcall(function() exports.kora_target:removeGlobalType('vehicle', id) end)
+    end
+end
+
+local function registerTargets()
+    unregisterTargets()
+    if GetResourceState('kora_target') ~= 'started' then return false end
+    local ok, id = pcall(function()
+        return exports.kora_target:addGlobalType('vehicle', mechanicTargetOptions(), Mechanic.interaction.distance)
+    end)
+    if ok and id then
+        mechanicTargetId = id
+        return true
+    end
+    print('[kora_businesses] mechanic target registration failed: ' .. tostring(id))
+    return false
+end
+
+AddEventHandler('onClientResourceStart', function(name)
+    if name == 'kora_target' then registerTargets() end
+end)
+
+-- Declared after the locals above so the handler can see them.
+AddEventHandler('onClientResourceStop', function(name)
+    if name == GetCurrentResourceName() then
+        unregisterTargets()
+    elseif name == 'kora_target' then
+        mechanicTargetId = nil
+    end
+end)
+
+-- kora_businesses can start after kora_target; this covers that case once.
+CreateThread(function()
+    Wait(0)
+    if not mechanicTargetId then registerTargets() end
+end)
