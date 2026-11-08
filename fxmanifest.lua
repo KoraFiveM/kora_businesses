@@ -30,11 +30,22 @@ client_scripts {
 
 files {
     'locales/**.lua',
-    -- Clients get only client/shared job files; jobs/*/server.lua is read from
-    -- disk by the server's Kora.require and must never be listed here.
-    'jobs/*/client.lua',
-    'jobs/*/shared.lua',
+    -- List job files explicitly so FiveM includes them in the client packfile.
+    -- The server loads server.lua from disk through Kora.require.
+    'jobs/cctv/client.lua',
+    'jobs/cctv/shared.lua',
+    'jobs/garbage/client.lua',
+    'jobs/garbage/shared.lua',
+    'jobs/hotdog/client.lua',
+    'jobs/mechanic/client.lua',
+    'jobs/mechanic/shared.lua',
+    'jobs/recycle/client.lua',
     'jobs/recycle/sales.lua',
+    'jobs/recycle/shared.lua',
+    'jobs/taxi/client.lua',
+    'jobs/taxi/shared.lua',
+    'jobs/tow/client.lua',
+    'jobs/tow/shared.lua',
     'docs/**.md',
     'init.lua'
 }
