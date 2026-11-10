@@ -188,7 +188,7 @@ local function beginService(action, vehicle)
     local netId = NetworkGetNetworkIdFromEntity(vehicle)
     if not netId or netId == 0 then return notify('This vehicle is not networked and cannot be serviced.', 'error') end
 
-    local allowed, permitOrReason = Kora.callback.trigger('qbbusinesses:mechanic:permit', action, netId)
+    local allowed, permitOrReason = Kora.callback.trigger('kora_businesses:mechanic:permit', action, netId)
     if not allowed then return notify(permitOrReason or 'Service could not be authorised.', 'error') end
 
     local completed = Kora.progressbar.start({
@@ -196,7 +196,7 @@ local function beginService(action, vehicle)
         scenario = { name = 'WORLD_HUMAN_VEHICLE_MECHANIC' }, disable = { move = true, combat = true },
     })
     if not completed then return notify('Service cancelled.', 'warning') end
-    TriggerServerEvent('qbbusinesses:server:serviceCompleted', permitOrReason, payload)
+    TriggerServerEvent('kora_businesses:server:serviceCompleted', permitOrReason, payload)
 end
 
 local function fixOneTyre(vehicle)
@@ -209,7 +209,7 @@ local function fixOneTyre(vehicle)
     return false
 end
 
-RegisterNetEvent('qbbusinesses:client:serviceApplied', function(action, netId, payload)
+RegisterNetEvent('kora_businesses:client:serviceApplied', function(action, netId, payload)
     local vehicle = NetworkGetEntityFromNetworkId(netId)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle)
         or not Kora.entities.requestControl(vehicle, 2000) then

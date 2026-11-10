@@ -1,5 +1,5 @@
 local root = debug.getinfo(1, 'S').source:sub(2):match('(.*/)') .. '../'
-local coreRoot = os.getenv('QB_CORE_ROOT') or root .. '../kora_core'
+local coreRoot = os.getenv('KORA_CORE_ROOT') or root .. '../kora_core'
 local callbacks, events = {}, {}
 local payments = 0
 local env = {}

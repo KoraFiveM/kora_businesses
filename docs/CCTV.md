@@ -70,7 +70,7 @@ When an eligible on-duty CCTV engineer uses it:
 
 1. The server validates the engineer's job, duty state, and grade.
 2. The server loads systems installed by the CCTV company.
-3. kora_lib AppShell opens `qbbusinesses:cctv-laptop`.
+3. kora_lib AppShell opens `kora_businesses:cctv-laptop`.
 4. The engineer can view installed systems and service call-outs.
 
 The laptop uses kora_lib callbacks, notifications, and AppShell. It does not
@@ -81,7 +81,7 @@ trust client-supplied job or installation data.
 Businesses request call-outs through:
 
 ```lua
-Kora.callback.trigger('qbbusinesses:cctv:requestCallout', {
+Kora.callback.trigger('kora_businesses:cctv:requestCallout', {
     business = 'businessName',
     issue = 'camera', -- or 'nvr'
     cameraId = 'camera-id',
@@ -102,10 +102,10 @@ Successful requests are assigned a unique call-out ID and begin as `open` or
 `pending`. Engineers use these callbacks:
 
 ```lua
-qbbusinesses:cctv:listCallouts
-qbbusinesses:cctv:acceptCallout
-qbbusinesses:cctv:declineCallout
-qbbusinesses:cctv:completeCallout
+kora_businesses:cctv:listCallouts
+kora_businesses:cctv:acceptCallout
+kora_businesses:cctv:declineCallout
+kora_businesses:cctv:completeCallout
 ```
 
 Completing a call-out charges the configured camera or NVR repair price. The
@@ -115,7 +115,7 @@ call-out and repair amount are credited to the CCTV society account through
 ## Data and persistence
 
 The tables are created at startup from the schema in `jobs/cctv/server.lua`
-(`QBBusinessesCctvSchema`, applied with `Kora.sql.ensureTables`). It covers:
+(`KoraBusinessesCctvSchema`, applied with `Kora.sql.ensureTables`). It covers:
 
 - `kora_businesses_cctv_callouts`
 - `kora_businesses_cctv_systems`

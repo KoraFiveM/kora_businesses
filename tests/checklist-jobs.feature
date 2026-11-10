@@ -176,7 +176,7 @@ Feature: kora_businesses — Jobs
     """
     When I manually: ask a Mod to set my job to cctv and put me on duty, and give me a cctv_laptop item
     And I manually: use the cctv_laptop item
-    Then the "qbbusinesses:cctv-laptop" app opens
+    Then the "kora_businesses:cctv-laptop" app opens
     And I confirm: the app shows installed systems and call-outs
 
   @kora_businesses @checklist @checklist:kora_businesses:cctv-callouts @cat:jobs @manual

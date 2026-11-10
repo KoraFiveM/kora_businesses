@@ -220,7 +220,7 @@ assert(callbacks['qb-garbagejob:returnTruck'](1, state.truck + 1000) == false)
 assert(entities[state.truck] and not state.paid, 'a failed payout keeps the completed route available')
 state.rejectPayment = false
 assert(callbacks['qb-garbagejob:returnTruck'](1, state.truck + 1000) == #state.route * 50)
-assert(state.paid == #state.route * 50 and not entities[state.truck], 'completed routes pay through qbcore once')
+assert(state.paid == #state.route * 50 and not entities[state.truck], 'completed routes pay through kora_core once')
 assert(callbacks['qb-garbagejob:returnTruck'](1, state.truck + 1000) == false)
 
 env, callbacks, entities, calls, state = setup(1, false)
@@ -246,4 +246,4 @@ entities[state.truck] = nil
 emit(state, 'onResourceStop', 'kora_businesses')
 assert(state.activeZones[zoneId] == nil, 'resource stop removes the active stop target')
 assert(state.activeZones[99] and #state.removedZones == 3, 'cleanup preserves unrelated zones')
-print('qbbusinesses garbage: truck registration, bag deposits, failure cleanup and stop zone lifecycle passed')
+print('kora_businesses garbage: truck registration, bag deposits, failure cleanup and stop zone lifecycle passed')

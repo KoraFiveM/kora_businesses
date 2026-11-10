@@ -21,7 +21,7 @@ local Kora = {
     },
 }
 local env = setmetatable({
-    Kora = Kora, QB = Kora,
+    Kora = Kora, Kora = Kora,
     Recycle = { SellMaterials = true, SellPed = { x = 0, y = 0, z = 0, w = 0 }, SellDefaultAmount = 1, MaxSellPerRequest = 500 },
     vector4 = function(x, y, z, w) return { x = x, y = y, z = z, w = w } end,
     exports = setmetatable({

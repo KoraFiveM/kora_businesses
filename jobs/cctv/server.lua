@@ -1,4 +1,4 @@
-QBBusinessesCctvSchema = {
+KoraBusinessesCctvSchema = {
     {
         name = 'kora_businesses_cctv_callouts',
         columns = {
@@ -51,7 +51,7 @@ local repairSessions = {}
 
 local function setBucket(src, bucket)
     SetPlayerRoutingBucket(src, bucket)
-    TriggerEvent('qbvoice:server:bucketChanged', src)
+    TriggerEvent('kora_voice:server:bucketChanged', src)
 end
 
 if not Kora.shared.get('items', Cctv.laptopItem) then
@@ -65,7 +65,7 @@ if not Kora.shared.get('items', Cctv.laptopItem) then
         shouldClose = true,
         description = 'Access the CCTV systems installed by your company.',
     })
-    if not registered then print(('^1[qbbusinesses]^7 CCTV laptop registration failed: %s'):format(err or 'unknown error')) end
+    if not registered then print(('^1[kora_businesses]^7 CCTV laptop registration failed: %s'):format(err or 'unknown error')) end
 end
 
 local function playerJob(src)
@@ -81,23 +81,23 @@ exports.kora_inventory:CreateUsableItem(Cctv.laptopItem, function(src)
     if not playerJob(src) then
         return false, 'You must be an on-duty CCTV engineer to use this laptop.'
     end
-    TriggerClientEvent('qbbusinesses:cctv:openLaptop', src)
+    TriggerClientEvent('kora_businesses:cctv:openLaptop', src)
     return true
 end)
 
 CreateThread(function()
     if not Kora.sql.ready(60000) then
-        print('^1[qbbusinesses]^7 qbsql was not ready; CCTV persistence is disabled.')
+        print('^1[kora_businesses]^7 kora_sql was not ready; CCTV persistence is disabled.')
         return
     end
-    local reports, err = Kora.sql.ensureTables(QBBusinessesCctvSchema)
+    local reports, err = Kora.sql.ensureTables(KoraBusinessesCctvSchema)
     if err then
-        print(('^1[qbbusinesses]^7 CCTV schema failed: %s'):format(err))
+        print(('^1[kora_businesses]^7 CCTV schema failed: %s'):format(err))
         return
     end
     for _, report in ipairs(reports or {}) do
         for _, warning in ipairs(report.warnings or {}) do
-            print(('^3[qbbusinesses]^7 CCTV schema %s: %s'):format(report.table, warning))
+            print(('^3[kora_businesses]^7 CCTV schema %s: %s'):format(report.table, warning))
         end
     end
 end)
@@ -187,7 +187,7 @@ local function calloutFor(src, id)
     return callout
 end
 
-Kora.callback.register('qbbusinesses:cctv:requestCallout', function(src, data)
+Kora.callback.register('kora_businesses:cctv:requestCallout', function(src, data)
     if not Cctv.callouts.enabled then return false, 'Emergency CCTV call-outs are unavailable.' end
     if type(data) ~= 'table' or not validIssue(data.issue) then return false, 'Choose a valid CCTV issue.' end
     local account, customerError = customer(src, data)
@@ -221,14 +221,14 @@ Kora.callback.register('qbbusinesses:cctv:requestCallout', function(src, data)
     return true, callouts[id]
 end, { rateLimit = { max = 3, window = 60000 } })
 
-Kora.callback.register('qbbusinesses:cctv:listCallouts', function(src)
+Kora.callback.register('kora_businesses:cctv:listCallouts', function(src)
     if not playerJob(src) then return {} end
     local result = {}
     for _, callout in pairs(callouts) do result[#result + 1] = callout end
     return result
 end)
 
-Kora.callback.register('qbbusinesses:cctv:laptopData', function(src)
+Kora.callback.register('kora_businesses:cctv:laptopData', function(src)
     if not playerJob(src) then return nil, 'You must be an on-duty CCTV engineer.' end
     local result = {}
     for _, callout in pairs(callouts) do result[#result + 1] = callout end
@@ -236,7 +236,7 @@ Kora.callback.register('qbbusinesses:cctv:laptopData', function(src)
     return { systems = systems, callouts = result, company = Cctv.job }
 end)
 
-Kora.callback.register('qbbusinesses:cctv:acceptCallout', function(src, id)
+Kora.callback.register('kora_businesses:cctv:acceptCallout', function(src, id)
     if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
     local callout = callouts[id]
     if not callout or (callout.status ~= 'open' and callout.status ~= 'pending') then
@@ -246,7 +246,7 @@ Kora.callback.register('qbbusinesses:cctv:acceptCallout', function(src, id)
     return true, callout
 end)
 
-Kora.callback.register('qbbusinesses:cctv:completeCallout', function(src, id)
+Kora.callback.register('kora_businesses:cctv:completeCallout', function(src, id)
     if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
     local callout = callouts[id]
     if not callout or callout.status ~= 'accepted' or callout.engineer ~= src then
@@ -269,7 +269,7 @@ Kora.callback.register('qbbusinesses:cctv:completeCallout', function(src, id)
     return true, callout
 end)
 
-Kora.callback.register('qbbusinesses:cctv:beginHack', function(src, data)
+Kora.callback.register('kora_businesses:cctv:beginHack', function(src, data)
     if not Cctv.hacking.enabled then return false, 'CCTV hacking is disabled.' end
     if type(data) ~= 'table' or type(data.targetId) ~= 'string' or #data.targetId > 80 then
         return false, 'Invalid CCTV target.'
@@ -292,7 +292,7 @@ Kora.callback.register('qbbusinesses:cctv:beginHack', function(src, data)
     return true, { authorization = authorised, bucket = bucket }
 end)
 
-Kora.callback.register('qbbusinesses:cctv:finishHack', function(src, data)
+Kora.callback.register('kora_businesses:cctv:finishHack', function(src, data)
     local session = hackSessions[src]
     hackSessions[src] = nil
     if not session or session.expires < GetGameTimer() then
@@ -310,7 +310,7 @@ Kora.callback.register('qbbusinesses:cctv:finishHack', function(src, data)
     return true, { targetId = session.targetId }
 end)
 
-Kora.callback.register('qbbusinesses:cctv:beginRepairCheck', function(src, data)
+Kora.callback.register('kora_businesses:cctv:beginRepairCheck', function(src, data)
     if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
     if not Cctv.repairChecks.enabled or type(data) ~= 'table' then return false, 'Repair checks are unavailable.' end
     local level = systemSecurity(data.targetId)
@@ -324,7 +324,7 @@ Kora.callback.register('qbbusinesses:cctv:beginRepairCheck', function(src, data)
     return true, { authorization = authorization }
 end)
 
-Kora.callback.register('qbbusinesses:cctv:finishRepairCheck', function(src, data)
+Kora.callback.register('kora_businesses:cctv:finishRepairCheck', function(src, data)
     local session = repairSessions[src]
     repairSessions[src] = nil
     if not session or session.expires < GetGameTimer() then return false, 'That repair check expired.' end
@@ -360,7 +360,7 @@ CreateThread(function()
     end
 end)
 
-Kora.callback.register('qbbusinesses:cctv:declineCallout', function(src, id)
+Kora.callback.register('kora_businesses:cctv:declineCallout', function(src, id)
     if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
     local callout = callouts[id]
     if not callout or callout.status ~= 'accepted' or callout.engineer ~= src then

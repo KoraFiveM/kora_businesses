@@ -33,7 +33,7 @@ local Kora = {
 
 local env
 env = setmetatable({
-    Kora = Kora, QB = Kora,
+    Kora = Kora, Kora = Kora,
     Recycle = {
         OutsideLocation = vec(0, 0, 0, 0), InsideLocation = vec(1, 1, 1, 1), DutyLocation = vec(2, 2, 2, 2), DropLocation = vec(3, 3, 3, 3),
         DrawPackageLocationBlip = true, PickupActionDuration = 10, DeliveryActionDuration = 10,

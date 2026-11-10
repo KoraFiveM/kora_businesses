@@ -145,4 +145,4 @@ assert(grantFor('inactive', true).networked == true, 'no lockdown allows a netwo
 assert(grantFor('strict', true).networked == false, 'strict lockdown forces a local box')
 assert(grantFor('relaxed', false).networked == false, 'networked box is opt-in')
 
-print('qbbusinesses recycling: pickup authority, timing, proximity, replay, lifecycle and sell amount regression passed')
+print('kora_businesses recycling: pickup authority, timing, proximity, replay, lifecycle and sell amount regression passed')

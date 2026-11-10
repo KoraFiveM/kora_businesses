@@ -87,7 +87,7 @@ local function makePermit(src, action, netId)
     return id
 end
 
-Kora.callback.register('qbbusinesses:mechanic:permit', function(src, action, netId)
+Kora.callback.register('kora_businesses:mechanic:permit', function(src, action, netId)
     local vehicle = getVehicle(src, netId)
     if not vehicle then return false, 'Move closer to a valid vehicle.' end
     local allowed, reason = canPerform(src, action, vehicle)
@@ -95,7 +95,7 @@ Kora.callback.register('qbbusinesses:mechanic:permit', function(src, action, net
     return true, makePermit(src, action, netId)
 end, { rateLimit = Mechanic.interaction.permitRateLimit })
 
-RegisterNetEvent('qbbusinesses:server:serviceCompleted', function(permitId, payload)
+RegisterNetEvent('kora_businesses:server:serviceCompleted', function(permitId, payload)
     local src = source
     local permit = permits[permitId]
     permits[permitId] = nil -- permits are single-use even if validation fails
@@ -114,7 +114,7 @@ RegisterNetEvent('qbbusinesses:server:serviceCompleted', function(permitId, payl
         local removed, err = exports.kora_core:removeItem(src, cost.item, cost.amount or 1, nil, 'vehicle service')
         if not removed then return notify(src, ('Required item missing: %s.'):format(err or cost.item), 'error') end
     end
-    TriggerClientEvent('qbbusinesses:client:serviceApplied', src, permit.action, permit.netId, payload)
+    TriggerClientEvent('kora_businesses:client:serviceApplied', src, permit.action, permit.netId, payload)
 end)
 
 AddEventHandler('playerDropped', function()

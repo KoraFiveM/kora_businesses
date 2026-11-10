@@ -3,8 +3,6 @@ game 'gta5'
 lua54 'yes'
 
 name 'kora_businesses'
--- Keep the legacy resource name resolvable for exports['qbbusinesses'] callers.
-provide 'qbbusinesses'
 author 'qbcore2'
 version '1.0.0'
 
@@ -32,9 +30,20 @@ files {
     'locales/**.lua',
     -- Clients get only client/shared job files; jobs/*/server.lua is read from
     -- disk by the server's Kora.require and must never be listed here.
-    'jobs/*/client.lua',
-    'jobs/*/shared.lua',
+    -- Listed explicitly: FiveM globs do not expand `*` in a directory segment.
+    'jobs/mechanic/client.lua',
+    'jobs/mechanic/shared.lua',
+    'jobs/taxi/client.lua',
+    'jobs/taxi/shared.lua',
+    'jobs/garbage/client.lua',
+    'jobs/garbage/shared.lua',
+    'jobs/recycle/client.lua',
+    'jobs/recycle/shared.lua',
     'jobs/recycle/sales.lua',
+    'jobs/tow/client.lua',
+    'jobs/tow/shared.lua',
+    'jobs/cctv/client.lua',
+    'jobs/cctv/shared.lua',
     'docs/**.md',
     'init.lua'
 }

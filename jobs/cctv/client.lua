@@ -1,15 +1,15 @@
 -- CCTV has no client authority. The phone and management resources consume the
 -- server callbacks exposed by jobs/cctv/server.lua.
-local APP_ID = 'qbbusinesses:cctv-laptop'
+local APP_ID = 'kora_businesses:cctv-laptop'
 local active = false
 
 local function hack(targetId)
-    local started, data = Kora.callback.trigger('qbbusinesses:cctv:beginHack', { targetId = targetId })
+    local started, data = Kora.callback.trigger('kora_businesses:cctv:beginHack', { targetId = targetId })
     if not started then
         return Kora.notify.send({ title = 'CCTV', message = data or 'Could not start the hack.', type = 'error' })
     end
     local result = Kora.minigames.play(Cctv.hacking.game, nil, data.authorization)
-    local success, response = Kora.callback.trigger('qbbusinesses:cctv:finishHack', { proof = result and result.proof })
+    local success, response = Kora.callback.trigger('kora_businesses:cctv:finishHack', { proof = result and result.proof })
     Kora.notify.send({
         title = 'CCTV',
         message = success and ('Access granted: %s'):format(response.targetId) or (response or 'The hack failed.'),
@@ -18,12 +18,12 @@ local function hack(targetId)
 end
 
 local function repair(targetId)
-    local started, data = Kora.callback.trigger('qbbusinesses:cctv:beginRepairCheck', {
+    local started, data = Kora.callback.trigger('kora_businesses:cctv:beginRepairCheck', {
         targetId = targetId,
     })
     if not started then return Kora.notify.send({ title = 'CCTV', message = data or 'Could not start repair.', type = 'error' }) end
     local result = Kora.minigames.play(Cctv.repairChecks.game, nil, data.authorization)
-    local success, response = Kora.callback.trigger('qbbusinesses:cctv:finishRepairCheck', { proof = result and result.proof })
+    local success, response = Kora.callback.trigger('kora_businesses:cctv:finishRepairCheck', { proof = result and result.proof })
     Kora.notify.send({ title = 'CCTV', message = success and ('Repair check passed: %s'):format(response.targetId) or (response or 'The repair check failed.'), type = success and 'success' or 'error' })
 end
 
@@ -48,7 +48,7 @@ local function openLaptop()
     if active then return end
     active = true
     CreateThread(function()
-        local data, err = Kora.callback.trigger('qbbusinesses:cctv:laptopData')
+        local data, err = Kora.callback.trigger('kora_businesses:cctv:laptopData')
         if not data then
             Kora.notify.send({ title = 'CCTV', message = err or 'Laptop access denied.', type = 'error' })
             active = false
@@ -92,4 +92,4 @@ local function openLaptop()
     end)
 end
 
-RegisterNetEvent('qbbusinesses:cctv:openLaptop', openLaptop)
+RegisterNetEvent('kora_businesses:cctv:openLaptop', openLaptop)

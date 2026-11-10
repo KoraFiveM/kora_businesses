@@ -86,7 +86,7 @@ Kora.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, auth
         return fail('Minigame could not be verified.')
     end
 
-    if not skillData(src) then return fail('qbskills is required.') end
+    if not skillData(src) then return fail('kora_skills is required.') end
     local won = Kora.rewards.generate(Hotdog.PrepareRewards)[1]
     local quality = won.name
     local level = levelFor(src)

@@ -1,7 +1,7 @@
 -- Exercise the real deposit callbacks against the sibling core's money implementation.
--- Set QB_CORE_ROOT if kora_core is checked out somewhere else.
+-- Set KORA_CORE_ROOT if kora_core is checked out somewhere else.
 local root = debug.getinfo(1, 'S').source:sub(2):match('(.*/)') .. '../'
-local coreRoot = os.getenv('QB_CORE_ROOT') or root .. '../kora_core'
+local coreRoot = os.getenv('KORA_CORE_ROOT') or root .. '../kora_core'
 local env = {}
 for name, value in pairs(_G) do env[name] = value end
 env.Config, env.Hotdog, env.Globals = nil, nil, {}
@@ -171,7 +171,7 @@ local price = config.Stock.common.Price[1]
 equal(offerRange('common', 1), ('%d-%d'):format(price.min, price.max), 'missing skills preserve the level-one fallback')
 
 -- Locale values must reach the real formatter, not a key-only fixture.
-local libraryRoot = os.getenv('QB_LIB_ROOT') or root .. '../kora_lib'
+local libraryRoot = os.getenv('KORA_LIB_ROOT') or root .. '../kora_lib'
 env.Kora.locale = {}
 env.GetInvokingResource = function() return 'kora_businesses' end
 env.GetCurrentResourceName = function() return 'kora_businesses' end
@@ -238,4 +238,4 @@ equal(lastNotice.type, 'success', 'return notification type remains unchanged')
 equal(env.Kora.lang('hotdog.' .. 'success.made_luck_hotdog', 2, 'Rare (B)'), 'You made 2 x Rare (B) Hot Dogs',
     'unrelated positional hotdog phrases retain their contract')
 
-print('qbbusinesses hotdog: ' .. checks .. ' deposit and offer-price checks passed')
+print('kora_businesses hotdog: ' .. checks .. ' deposit and offer-price checks passed')
