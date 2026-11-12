@@ -21,64 +21,27 @@ sidebar_position: 1
 
 ## Requirements
 
-Declared in `fxmanifest.lua`:
+See [Installation](./installation.md#requirements) for the declared dependencies and the runtime-only ones (`kora_target`, `kora_vehiclekeys`, optional `kora_voice`).
 
-- [kora_lib](https://github.com/KoraFiveM/kora_lib) - callbacks, notifications, blips, zones, interactions, progress bars, minigames, NUI AppShell, configuration adoption.
-- [kora_sql](https://github.com/KoraFiveM/kora_sql) - CCTV schema (`Kora.sql.ensureTables`) and queries.
-- [kora_core](https://github.com/KoraFiveM/kora_core) - player data, jobs, money, items, the `removestand` command helper.
-- [kora_inventory](https://github.com/KoraFiveM/kora_inventory) - item rewards, item removal and the usable CCTV laptop.
-- [kora_banking](https://github.com/KoraFiveM/kora_banking) - CCTV society account charges and payouts.
-- [kora_skills](https://github.com/KoraFiveM/kora_skills) - skill levels for the CCTV hack and the hotdog job.
+## Documentation map
 
-Used at runtime but not declared as dependencies:
-
-- [kora_target](https://github.com/KoraFiveM/kora_target) - target options for the mechanic, garbage, recycle and tow jobs.
-- [kora_vehiclekeys](https://github.com/KoraFiveM/kora_vehiclekeys) - keys for the garbage truck (`GARBAGE`) and the tow flatbed (`TOW`).
-- `kora_voice` (optional) - the CCTV hack fires the local server event `kora_voice:server:bucketChanged` when it moves a player between routing buckets.
-
-## Installation
-
-1. Place the resource in your resources folder (for example inside `[kora]`).
-2. Ensure it after its dependencies in `server.cfg`:
-
-   ```cfg
-   ensure kora_lib
-   ensure kora_sql
-   ensure kora_core
-   ensure kora_inventory
-   ensure kora_banking
-   ensure kora_skills
-   ensure kora_target
-   ensure kora_vehiclekeys
-   ensure kora_businesses
-   ```
-
-3. Database: no manual SQL import is needed. The CCTV tables are created or updated at startup with `Kora.sql.ensureTables`. See [Database](./database.md).
-4. Items: the `cctv_laptop` item is registered automatically. The recycling rewards must exist in your shared items. See [Items](./items.md).
-5. Jobs: the jobs referenced by each feature must exist in your job configuration (for example `cctv`, which is not created by this resource). See [Jobs and permissions](./jobs.md).
-6. Optionally disable jobs you do not want in `config.lua`. See [Configuration](./configuration.md).
-
-## Documentation pages
-
+- [Installation](./installation.md) - dependencies, `server.cfg` order, job toggles, how jobs load, hotdog status, local config overrides, file layout.
+- [How to use](./how-to-use.md) - the gameplay loop of every job.
+- [Commands and keybinds](./commands.md) - `/cctvhack`, `/cctvrepair`, `/removestand`, the hotdog keybind and where interactions are listed.
+- [API reference](./api/index.md) - per-module callbacks, events and functions:
+  - [Job toggles and boot](./api/job-toggles.md)
+  - [CCTV engineer](./api/cctv.md)
+  - [Garbage collector](./api/garbage.md)
+  - [Hotdog vendor](./api/hotdog.md)
+  - [Mechanic / bodyshop](./api/mechanic.md)
+  - [Recycling centre](./api/recycle.md)
+  - [Tow truck driver](./api/tow.md)
+  - [Taxi driver](./api/taxi.md)
 - [Configuration](./configuration.md) - job toggles, override file, and where each job's settings live.
 - [Jobs and permissions](./jobs.md) - which job names, job types, duty and grades each feature checks.
-- [Commands and keybinds](./commands.md)
-- [Exports](./exports.md)
-- [Events and callbacks](./events.md)
-- [Database](./database.md)
-- [Items](./items.md)
+- [Exports](./exports.md) - the `getCctvCallouts` server export.
+- [Events and callbacks](./events.md) - code-derived list of events and callbacks.
+- [Database](./database.md) - CCTV tables.
+- [Items](./items.md) - items used and registered.
 - Features: [Mechanic](./features/mechanic.md), [Taxi](./features/taxi.md), [Garbage](./features/garbage.md), [Recycle](./features/recycle.md), [Tow](./features/tow.md), [CCTV](./features/cctv.md), [Hotdog](./features/hotdog.md)
 
-## File layout
-
-```text
-fxmanifest.lua              resource manifest
-config.lua                  job toggles (Config.enable) and job loader
-init.lua                    registers job config tables with Kora.config.adopt
-businesses.config.local.lua saved configuration overrides
-jobs/<job>/shared.lua       per-job configuration (hotdog uses config.lua)
-jobs/<job>/client.lua       client logic
-jobs/<job>/server.lua       server logic (never sent to clients)
-locales/en.lua              recycle and hotdog strings
-tests/                      offline Lua tests and kora_qa checklist scenarios
-```
