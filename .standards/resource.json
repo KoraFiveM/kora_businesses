@@ -1,0 +1,74 @@
+{
+  "resource": "kora_businesses",
+  "standardsRevision": "2026-11-12.1",
+  "realms": {
+    "client": [
+      "jobs/cctv/client.lua",
+      "jobs/garbage/client.lua",
+      "jobs/hotdog/client.lua",
+      "jobs/mechanic/client.lua",
+      "jobs/recycle/client.lua",
+      "jobs/taxi/client.lua",
+      "jobs/tow/client.lua"
+    ],
+    "server": [
+      "jobs/cctv/server.lua",
+      "jobs/garbage/server.lua",
+      "jobs/hotdog/server.lua",
+      "jobs/mechanic/server.lua",
+      "jobs/recycle/server.lua",
+      "jobs/taxi/server.lua",
+      "jobs/tow/server.lua"
+    ],
+    "shared": [
+      "businesses.config.local.lua",
+      "config.lua",
+      "init.lua",
+      "jobs/cctv/shared.lua",
+      "jobs/garbage/shared.lua",
+      "jobs/hotdog/config.lua",
+      "jobs/mechanic/shared.lua",
+      "jobs/recycle/sales.lua",
+      "jobs/recycle/shared.lua",
+      "jobs/taxi/shared.lua",
+      "jobs/tow/shared.lua",
+      "locales/en.lua"
+    ],
+    "manifest": [
+      "fxmanifest.lua"
+    ],
+    "test": [
+      "tests/cctv.lua",
+      "tests/garbage.lua",
+      "tests/hotdog.lua",
+      "tests/mechanic.lua",
+      "tests/recycle-client.lua",
+      "tests/recycle-sales.lua",
+      "tests/recycle.lua",
+      "tests/taxi-authorization.lua",
+      "tests/taxi.lua",
+      "tests/tow.lua"
+    ]
+  },
+  "exclude": [
+    ".git/*",
+    ".github/*",
+    ".standards/*",
+    "node_modules/*",
+    "**/node_modules/*",
+    "vendor/*",
+    "**/vendor/*",
+    "web/*",
+    "ui/*",
+    "html/*",
+    "dist/*",
+    "artifacts/*",
+    "runtime/*",
+    "txData/*",
+    "storage/*",
+    "stream/*",
+    "docs/*",
+    "__pycache__/*",
+    "modules/lookup/data/*"
+  ]
+}
