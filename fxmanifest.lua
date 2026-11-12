@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'kora_businesses'
 author 'qbcore2'
-version '0.2.0'
+version '0.2.1'
 
 dependency 'kora_lib'
 dependency 'kora_sql'
