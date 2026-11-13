@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 name 'kora_businesses'
-author 'qbcore2'
+author 'Kora'
 version '0.2.1'
 
 dependency 'kora_lib'

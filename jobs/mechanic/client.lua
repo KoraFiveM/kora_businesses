@@ -104,7 +104,7 @@ AddEventHandler('onClientResourceStop', function(resource)
 end)
 
 local function notify(message, kind)
-    Kora.notify.send({ title = 'Vehicle service', message = message, type = kind or 'info' })
+    Kora.notify.send({ title = Kora.lang('mechanic.title'), message = message, type = kind or 'info' })
 end
 
 local function playerJob()
@@ -149,8 +149,8 @@ local function servicePayload(action, vehicle)
     if action == 'paint' then
         local primary, secondary = GetVehicleColours(vehicle)
         local response = Kora.nui.openInputDialog({
-            { id = 'primary', label = 'Primary paint index', type = 'number', default = primary, min = Mechanic.cosmetics.paintColourMin, max = Mechanic.cosmetics.paintColourMax, required = true },
-            { id = 'secondary', label = 'Secondary paint index', type = 'number', default = secondary, min = Mechanic.cosmetics.paintColourMin, max = Mechanic.cosmetics.paintColourMax, required = true },
+            { id = 'primary', label = Kora.lang('mechanic.primary_paint'), type = 'number', default = primary, min = Mechanic.cosmetics.paintColourMin, max = Mechanic.cosmetics.paintColourMax, required = true },
+            { id = 'secondary', label = Kora.lang('mechanic.secondary_paint'), type = 'number', default = secondary, min = Mechanic.cosmetics.paintColourMin, max = Mechanic.cosmetics.paintColourMax, required = true },
         }, 'Respray vehicle', 'GTA palette indices; both colours are applied after the service.')
         if not response or response.cancelled then return nil end
         return { primary = math.floor(response.values.primary), secondary = math.floor(response.values.secondary) }
@@ -159,8 +159,8 @@ local function servicePayload(action, vehicle)
         SetVehicleModKit(vehicle, 0)
         local front, rear = GetVehicleMod(vehicle, 1), GetVehicleMod(vehicle, 2)
         local response = Kora.nui.openInputDialog({
-            { id = 'front', label = 'Front bumper variation (-1 stock)', type = 'number', default = front, min = -1, max = Mechanic.cosmetics.bumperModMax, required = true },
-            { id = 'rear', label = 'Rear bumper variation (-1 stock)', type = 'number', default = rear, min = -1, max = Mechanic.cosmetics.bumperModMax, required = true },
+            { id = 'front', label = Kora.lang('mechanic.front_bumper'), type = 'number', default = front, min = -1, max = Mechanic.cosmetics.bumperModMax, required = true },
+            { id = 'rear', label = Kora.lang('mechanic.rear_bumper'), type = 'number', default = rear, min = -1, max = Mechanic.cosmetics.bumperModMax, required = true },
         }, 'Customise bumpers', 'Values are clamped to variations supported by this vehicle.')
         if not response or response.cancelled then return nil end
         return { front = math.floor(response.values.front), rear = math.floor(response.values.rear) }
@@ -248,10 +248,10 @@ end)
 -- coroutine because dialogs, callbacks and progress bars all yield.
 local function mechanicTargetOptions()
     return {
-        { icon = 'fas fa-wrench', label = 'Full garage repair', onSelect = function(entity) CreateThread(function() beginService('fullRepair', entity) end) end, canInteract = canFullRepair, distance = Mechanic.interaction.distance },
-        { icon = 'fas fa-truck-pickup', label = 'Roadside stabilisation', onSelect = function(entity) CreateThread(function() beginService('roadsideRepair', entity) end) end, canInteract = canRepair, distance = Mechanic.interaction.distance },
-        { icon = 'fas fa-paint-roller', label = 'Respray vehicle', onSelect = function(entity) CreateThread(function() beginService('paint', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
-        { icon = 'fas fa-car', label = 'Customise bumpers', onSelect = function(entity) CreateThread(function() beginService('bumpers', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
+        { icon = 'fas fa-wrench', label = Kora.lang('mechanic.full_repair'), onSelect = function(entity) CreateThread(function() beginService('fullRepair', entity) end) end, canInteract = canFullRepair, distance = Mechanic.interaction.distance },
+        { icon = 'fas fa-truck-pickup', label = Kora.lang('mechanic.roadside'), onSelect = function(entity) CreateThread(function() beginService('roadsideRepair', entity) end) end, canInteract = canRepair, distance = Mechanic.interaction.distance },
+        { icon = 'fas fa-paint-roller', label = Kora.lang('mechanic.respray'), onSelect = function(entity) CreateThread(function() beginService('paint', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
+        { icon = 'fas fa-car', label = Kora.lang('mechanic.bumpers'), onSelect = function(entity) CreateThread(function() beginService('bumpers', entity) end) end, canInteract = canUseBodyshop, distance = Mechanic.interaction.distance },
     }
 end
 

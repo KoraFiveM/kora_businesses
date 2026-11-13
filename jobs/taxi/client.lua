@@ -27,7 +27,7 @@ end
 local function spawnPickup()
     local data = Kora.callback.trigger('qb-taxi:getPickupLocation')
     if not data then
-        Kora.notify.send({ title = 'Taxi', message = 'You must be on duty as a taxi driver.', type = 'error' })
+        Kora.notify.send({ title = Kora.lang('taxi.title'), message = Kora.lang('taxi.on_duty'), type = 'error' })
         return false
     end
     pickupLocation = data.pickup
@@ -72,7 +72,7 @@ end)
 
 Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0.0), {
     {
-        label = 'Spawn Taxi',
+        label = Kora.lang('taxi.spawn'),
         action = function()
             taxi = Kora.entities.create('taxi', Taxi.parkLocation, {})
             TaskWarpPedIntoVehicle(PlayerPedId(), taxi, -1)
@@ -87,7 +87,7 @@ Kora.interact.addBoxZone('taxi_veh', Taxi.parkLocation, vector4(4.0, 4.0, 3.0, 0
         end
     },
     {
-        label = 'Return Taxi',
+        label = Kora.lang('taxi.return_vehicle'),
         action = function()
             Kora.entities.remove(taxi)
             taxi = nil

@@ -27,8 +27,8 @@ local function setUpPickup(data)
     SetModelAsNoLongerNeeded(vehicle)
     pickupBlip = AddBlipForEntity(pickupVeh)
     Kora.notify.send({
-        title = 'Tow Job',
-        message = 'New tow vehicle marked on your map',
+        title = Kora.lang('tow.title'),
+        message = Kora.lang('tow.new_vehicle'),
         type = 'success'
     })
     SetBlipSprite(pickupBlip, 326)
@@ -37,12 +37,12 @@ local function setUpPickup(data)
     SetBlipAsShortRange(pickupBlip, true)
     SetBlipColour(pickupBlip, 15)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentSubstringPlayerName("Tow Pickup")
+    AddTextComponentSubstringPlayerName(Kora.lang('tow.pickup_blip'))
     EndTextCommandSetBlipName(pickupBlip)
     SetNewWaypoint(loc.x, loc.y)
     exports.kora_target:addEntity(pickupVeh, {
             {
-                label = "Tow Vehicle",
+                label = Kora.lang('tow.tow_vehicle'),
                 icon = "fas fa-car",
                 onSelect = function()
                     local confirm = Kora.callback.trigger("qb-tow:server:pickUp")
@@ -52,8 +52,8 @@ local function setUpPickup(data)
                     AttachEntityToEntity(pickupVeh, veh, GetEntityBoneIndexByName(veh, 'bodyshell'), 0.0, -1.5 + -0.85, 0.0 + 1.15, 0, 0, 0, 1, 1, 0, 1, 0, 1)
                     towAttached = true
                     Kora.notify.send({
-                        title = 'Tow Job',
-                        message = 'Head Back To The Tow Yard',
+                        title = Kora.lang('tow.title'),
+                        message = Kora.lang('tow.return_yard'),
                         type = 'success'
                     })
                 end,
@@ -62,7 +62,7 @@ local function setUpPickup(data)
                 end
             },
             {
-                label = "Place Vehicle",
+                label = Kora.lang('tow.place_vehicle'),
                 icon = "fas fa-car",
                 onSelect = function()
                     DetachEntity(pickupVeh, true, true)
@@ -87,7 +87,7 @@ end
 
 Kora.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3, 3), {
     {
-        label = 'Pull Out Vehicle',
+        label = Kora.lang('tow.pull_out'),
         icon = "fas fa-car",
         action = function()
             local data = Kora.callback.trigger("qb-tow:server:TakeOutVehicle")
@@ -110,7 +110,7 @@ Kora.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3
         end
     },
     {
-        label = 'Detach Vehicle',
+        label = Kora.lang('tow.detach'),
         icon = "fas fa-car",
         action = function()
             local checkDist = Kora.callback.trigger("qb-tow:server:CheckDistance")
@@ -124,7 +124,7 @@ Kora.interact.addBoxZone('towVehGet', Tow.Locations.vehicle.coords, vector3(3, 3
         end
     },
     {
-        label = 'Store Vehicle',
+        label = Kora.lang('tow.store'),
         icon = "fas fa-car",
         action = function()
             local confirmed = Kora.callback.trigger("qb-tow:server:ReturnVehicle")

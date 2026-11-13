@@ -42,9 +42,9 @@ local pushBlockedControls = { 244, 23 }
 local STOCK_APP_ID = 'qb-hotdogjob:stock'
 
 local QUALITY_META = {
-    common = { label = 'Common', image = '/icon.png', color = '#d62828' },
-    rare = { label = 'Rare', image = '/icon.png', color = '#f77f00' },
-    exotic = { label = 'Exotic', image = '/icon.png', color = '#2a9d5b' },
+    common = { label = Kora.lang('hotdog.info.label_c'), image = '/icon.png', color = '#d62828' },
+    rare = { label = Kora.lang('hotdog.info.label_b'), image = '/icon.png', color = '#f77f00' },
+    exotic = { label = Kora.lang('hotdog.info.label_a'), image = '/icon.png', color = '#2a9d5b' },
 }
 
 local function notify(message, notifyType)
@@ -95,7 +95,7 @@ local function buildStockNav()
             label = meta.label,
             image = meta.image,
             backgroundColor = meta.color,
-            description = ('Max %d'):format(data.Max[math.min(getLevel(), 4)]),
+            description = Kora.lang('hotdog.info.stock_max', data.Max[math.min(getLevel(), 4)]),
             badge = tostring(count),
             tone = count > 0 and 'success' or 'neutral',
         }
@@ -104,18 +104,18 @@ local function buildStockNav()
     return {
         {
             id = 'stock',
-            label = 'Stock',
+            label = Kora.lang('hotdog.info.stock'),
             icon = 'Package',
             content = {
-                title = 'Your stock',
+                title = Kora.lang('hotdog.info.your_stock'),
                 blocks = {
                     { type = 'list', layout = 'list', items = items },
                     {
                         type = 'stats',
-                        title = 'Cooking skill',
+                        title = Kora.lang('hotdog.info.cooking_skill'),
                         items = {
-                            { label = 'Level', value = getLevel(), icon = 'Star' },
-                            { label = 'Cooking XP', value = getRep(), icon = 'TrendingUp' },
+                            { label = Kora.lang('hotdog.info.level'), value = getLevel(), icon = 'Star' },
+                            { label = Kora.lang('hotdog.info.cooking_xp'), value = getRep(), icon = 'TrendingUp' },
                         },
                     },
                 },
@@ -130,8 +130,8 @@ end
 
 Kora.nui.registerApp({
     id = STOCK_APP_ID,
-    title = 'Hot Dog Cart',
-    description = 'Your current stock',
+    title = Kora.lang('hotdog.info.cart_title'),
+    description = Kora.lang('hotdog.info.stock_description'),
     icon = 'ShoppingBag',
     layout = 'compact',
     defaultView = 'stock',
@@ -275,7 +275,7 @@ local function addCustomerTarget(ped, quality, amount, range)
         },
         {
             icon = 'fas fa-x',
-            label = 'Decline offer',
+            label = Kora.lang('hotdog.info.decline_offer'),
             action = function() declineOffer(ped) end,
         },
     })
@@ -547,7 +547,7 @@ local function addStandTarget()
         },
         {
             icon = 'fas fa-box',
-            label = 'Check stock',
+            label = Kora.lang('hotdog.info.check_stock'),
             canInteract = function() return isWorking end,
             action = openStockApp,
         },

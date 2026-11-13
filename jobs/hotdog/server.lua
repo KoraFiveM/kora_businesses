@@ -41,9 +41,9 @@ end)
 Kora.callback.register('qb-hotdogjob:startWorking', function(src)
     local p = player(src)
     local cid = citizenId(src)
-    assert(p and cid, 'Player not found.')
-    assert(isHotdog(src), 'You are not a hotdog vendor.')
-    if Working[cid] then return fail('You are already working.') end
+    assert(p and cid, Kora.lang('hotdog.error.player_not_found'))
+    assert(isHotdog(src), Kora.lang('hotdog.error.not_vendor'))
+    if Working[cid] then return fail(Kora.lang('hotdog.error.already_working')) end
     local deposit = tonumber(Hotdog.StandDeposit) or 0
     if deposit > 0 then
         local paid, err = exports.kora_core:removeMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
@@ -57,7 +57,7 @@ end)
 Kora.callback.register('qb-hotdogjob:stopWorking', function(src)
     local cid = citizenId(src)
     local p = player(src)
-    if not cid or not p then return fail('Player not found.') end
+    if not cid or not p then return fail(Kora.lang('hotdog.error.player_not_found')) end
     if not Working[cid] then return fail(Kora.lang('hotdog.error.no_stand_found')) end
 
     exports.kora_core:addMoney(src, 'bank', Hotdog.StandDeposit, 'hot dog deposit')
@@ -78,15 +78,15 @@ end)
 Kora.callback.register('qb-hotdogjob:finishPreparing', function(src, proof, authorization)
     local cid = citizenId(src)
     if not cid or not Working[cid] then Preparing[cid] = nil; return end
-    if not Preparing[cid] then return fail('Nothing to finish.') end
+    if not Preparing[cid] then return fail(Kora.lang('hotdog.error.nothing_to_finish')) end
     Preparing[cid] = nil
 
     if type(proof) ~= 'string' or type(authorization) ~= 'string'
         or not Kora.minigames.consumeProof(src, proof, 'keys', authorization) then
-        return fail('Minigame could not be verified.')
+        return fail(Kora.lang('hotdog.error.minigame_unverified'))
     end
 
-    if not skillData(src) then return fail('kora_skills is required.') end
+    if not skillData(src) then return fail(Kora.lang('hotdog.error.skills_required')) end
     local won = Kora.rewards.generate(Hotdog.PrepareRewards)[1]
     local quality = won.name
     local level = levelFor(src)
@@ -114,7 +114,7 @@ Kora.callback.register('qb-hotdogjob:sell', function(src, netId, quality, amount
     amount = math.floor(tonumber(amount) or 0)
     local stock = Stock[cid]
     if type(quality) ~= 'string' or not Hotdog.Stock[quality] or not stock or amount <= 0 or stock[quality] < amount then
-        return fail('Nothing to sell.')
+        return fail(Kora.lang('hotdog.error.nothing_to_sell'))
     end
 
     local level = levelFor(src)

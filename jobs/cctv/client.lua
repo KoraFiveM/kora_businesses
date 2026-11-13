@@ -6,13 +6,13 @@ local active = false
 local function hack(targetId)
     local started, data = Kora.callback.trigger('kora_businesses:cctv:beginHack', { targetId = targetId })
     if not started then
-        return Kora.notify.send({ title = 'CCTV', message = data or 'Could not start the hack.', type = 'error' })
+        return Kora.notify.send({ title = Kora.lang('cctv.title'), message = data or Kora.lang('cctv.start_hack_failed'), type = 'error' })
     end
     local result = Kora.minigames.play(Cctv.hacking.game, nil, data.authorization)
     local success, response = Kora.callback.trigger('kora_businesses:cctv:finishHack', { proof = result and result.proof })
     Kora.notify.send({
-        title = 'CCTV',
-        message = success and ('Access granted: %s'):format(response.targetId) or (response or 'The hack failed.'),
+        title = Kora.lang('cctv.title'),
+        message = success and Kora.lang('cctv.access_granted', response.targetId) or (response or Kora.lang('cctv.hack_failed_client')),
         type = success and 'success' or 'error',
     })
 end
@@ -21,10 +21,10 @@ local function repair(targetId)
     local started, data = Kora.callback.trigger('kora_businesses:cctv:beginRepairCheck', {
         targetId = targetId,
     })
-    if not started then return Kora.notify.send({ title = 'CCTV', message = data or 'Could not start repair.', type = 'error' }) end
+    if not started then return Kora.notify.send({ title = Kora.lang('cctv.title'), message = data or Kora.lang('cctv.start_repair_failed'), type = 'error' }) end
     local result = Kora.minigames.play(Cctv.repairChecks.game, nil, data.authorization)
     local success, response = Kora.callback.trigger('kora_businesses:cctv:finishRepairCheck', { proof = result and result.proof })
-    Kora.notify.send({ title = 'CCTV', message = success and ('Repair check passed: %s'):format(response.targetId) or (response or 'The repair check failed.'), type = success and 'success' or 'error' })
+    Kora.notify.send({ title = Kora.lang('cctv.title'), message = success and Kora.lang('cctv.repair_check_passed', response.targetId) or (response or Kora.lang('cctv.repair_check_failed')), type = success and 'success' or 'error' })
 end
 
 RegisterCommand('cctvhack', function(_, args)
@@ -38,8 +38,8 @@ RegisterCommand('cctvrepair', function(_, args)
 end, false)
 
 local function suggestCommands()
-    TriggerEvent('chat:addSuggestion', '/cctvhack', 'Hack a CCTV system', { { name = 'targetId', help = 'CCTV system ID' } })
-    TriggerEvent('chat:addSuggestion', '/cctvrepair', 'Run a CCTV repair check', { { name = 'targetId', help = 'CCTV system ID' } })
+    TriggerEvent('chat:addSuggestion', '/cctvhack', Kora.lang('cctv.command_hack'), { { name = 'targetId', help = Kora.lang('cctv.target_id') } })
+    TriggerEvent('chat:addSuggestion', '/cctvrepair', Kora.lang('cctv.command_repair'), { { name = 'targetId', help = Kora.lang('cctv.target_id') } })
 end
 suggestCommands()
 AddEventHandler('chat:init', suggestCommands)
@@ -50,40 +50,43 @@ local function openLaptop()
     CreateThread(function()
         local data, err = Kora.callback.trigger('kora_businesses:cctv:laptopData')
         if not data then
-            Kora.notify.send({ title = 'CCTV', message = err or 'Laptop access denied.', type = 'error' })
+            Kora.notify.send({ title = Kora.lang('cctv.title'), message = err or Kora.lang('cctv.access_denied'), type = 'error' })
             active = false
             return
         end
 
         local systems = {}
         for _, system in ipairs(data.systems or {}) do
+            local status = system.status and Kora.lang('cctv.status.' .. system.status) or Kora.lang('cctv.status_unknown')
             systems[#systems + 1] = {
                 id = system.id, label = system.businessLabel or system.business,
-                description = ('%d cameras · %s'):format(tonumber(system.cameraCount) or 0, system.status or 'Unknown'),
+                description = Kora.lang('cctv.cameras_status', tonumber(system.cameraCount) or 0, status),
                 icon = 'shield-check', tone = system.status == 'online' and 'success' or 'warning',
             }
         end
         local jobs = {}
         for _, callout in ipairs(data.callouts or {}) do
+            local issue = Kora.lang('cctv.issue.' .. (callout.issue or ''))
+            local status = Kora.lang('cctv.status.' .. (callout.status or ''))
             jobs[#jobs + 1] = {
-                id = callout.id, label = ('%s repair · %s'):format(callout.issue, callout.business),
-                description = callout.status, icon = 'wrench', tone = callout.status == 'completed' and 'success' or 'warning',
+                id = callout.id, label = Kora.lang('cctv.callout_label', issue, callout.business),
+                description = status, icon = 'wrench', tone = callout.status == 'completed' and 'success' or 'warning',
             }
         end
 
         Kora.nui.registerApp({
-            id = APP_ID, title = 'CCTV Engineer Laptop', description = 'Installed systems and service call-outs',
+            id = APP_ID, title = Kora.lang('cctv.laptop'), description = Kora.lang('cctv.laptop_description'),
             icon = 'monitor-smartphone', width = 1100, height = 720,
             navigation = {
-                { id = 'systems', label = 'Installed systems', icon = 'shield-check', content = {
-                    title = 'Company systems', description = 'CCTV systems installed by your company.',
+                { id = 'systems', label = Kora.lang('cctv.installed_systems'), icon = 'shield-check', content = {
+                    title = Kora.lang('cctv.company_systems'), description = Kora.lang('cctv.company_systems_description'),
                     blocks = { { type = 'list', layout = 'cards', searchable = true, pageSize = 8, items = systems,
-                        empty = 'No installed systems are available yet.' } },
+                        empty = Kora.lang('cctv.no_systems') } },
                 } },
-                { id = 'callouts', label = 'Call-outs', icon = 'wrench', badge = #jobs, content = {
-                    title = 'Service call-outs', description = 'Emergency repair work for your company.',
+                { id = 'callouts', label = Kora.lang('cctv.callouts'), icon = 'wrench', badge = #jobs, content = {
+                    title = Kora.lang('cctv.service_callouts'), description = Kora.lang('cctv.callouts_description'),
                     blocks = { { type = 'list', layout = 'cards', searchable = true, pageSize = 8, items = jobs,
-                        empty = 'No call-outs are currently listed.' } },
+                        empty = Kora.lang('cctv.no_callouts') } },
                 } },
             },
         })

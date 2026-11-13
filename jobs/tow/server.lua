@@ -52,14 +52,14 @@ Kora.callback.register('qb-tow:server:DropOff', function(source)
 end)
 
 Kora.callback.register('qb-tow:server:ReturnVehicle', function(source)
-    assert(towDrivers[source], "Player does not have a tow vehicle out")
-    assert(Kora.distance.player(source, Tow.Locations.vehicle.coords, 10.0), "Player is too far from the vehicle location")
+    assert(towDrivers[source], Kora.lang('tow.no_vehicle'))
+    assert(Kora.distance.player(source, Tow.Locations.vehicle.coords, 10.0), Kora.lang('tow.vehicle_location'))
 
     if towDrivers[source].droppedOff > 0 then
         exports.kora_core:addMoney(source, 'bank', towDrivers[source].droppedOff * Tow.payPerVehicle)
         Kora.notify.send(source, {
-            title = 'qb-towjob',
-            message = ('You received $%s for %s vehicle(s).'):format(
+            title = Kora.lang('tow.title'),
+            message = Kora.lang('tow.payout',
                 towDrivers[source].droppedOff * Tow.payPerVehicle,
                 towDrivers[source].droppedOff
             ),

@@ -76,7 +76,7 @@ local function createStopBlip(stopId)
     if not stop then return end
 
     blips.stop = Kora.blips.create(stop.coords, {
-        label = ('Garbage Stop %s'):format(stopId),
+        label = Kora.lang('garbage.stop_label', stopId),
         sprite = 318,
         color = 5,
         scale = 0.8,
@@ -135,7 +135,7 @@ local function addStopZone(stopId)
         options = {
              {
                 icon = 'fas fa-trash',
-                label = ('Grab Trash (%s/%s)'):format(garbage.collectedForStop, garbage.bagsRequired),
+                label = Kora.lang('garbage.grab_trash', garbage.collectedForStop, garbage.bagsRequired),
                 onSelect = function()
                     if garbage.busy then return end
 
@@ -145,8 +145,8 @@ local function addStopZone(stopId)
 
                     if garbage.bagObject then
                         Kora.notify.send({
-                            title = 'Garbage',
-                            message = 'You are already carrying a bag.',
+                            title = Kora.lang('garbage.title'),
+                            message = Kora.lang('garbage.already_carrying'),
                             type = 'warning',
                         })
                         return
@@ -206,14 +206,14 @@ local function addTruckTarget()
     exports.kora_target:addEntity(garbage.truck, {
         {
             icon = 'fas fa-dumpster',
-            label = 'Throw Trash Bag',
+            label = Kora.lang('garbage.throw_bag'),
             onSelect = function()
                 if garbage.busy then return end
 
                 if not garbage.bagObject then
                     Kora.notify.send({
-                        title = 'Garbage',
-                        message = 'You are not carrying a trash bag.',
+                        title = Kora.lang('garbage.title'),
+                        message = Kora.lang('garbage.not_carrying'),
                         type = 'warning',
                     })
                     return
@@ -254,15 +254,15 @@ local function addTruckTarget()
                         if nextStop then
                             setupStop(nextStop.stop, nextStop.bags)
                             Kora.notify.send({
-                                title = 'Garbage',
-                                message = 'Stop completed. Continue to the next stop.',
+                                title = Kora.lang('garbage.title'),
+                                message = Kora.lang('garbage.stop_complete'),
                                 type = 'success',
                             })
                         else
                             createDepotBlip(Config.GarbageDepotRoute ~= false)
                             Kora.notify.send({
-                                title = 'Garbage',
-                                message = ('All %s stops are complete. Return the truck to the depot.'):format(#garbage.route),
+                                title = Kora.lang('garbage.title'),
+                                message = Kora.lang('garbage.all_stops_complete', #garbage.route),
                                 type = 'success',
                             })
                         end
@@ -279,14 +279,14 @@ local function addTruckTarget()
         },
         {
             icon = 'fas fa-rotate-left',
-            label = 'Return Garbage Truck',
+            label = Kora.lang('garbage.return_truck'),
             onSelect = function()
                 if garbage.busy then return end
 
                 if not garbage.route or garbage.route[garbage.routeIndex] then
                     Kora.notify.send({
-                        title = 'Garbage',
-                        message = 'Finish all of your stops before returning the truck.',
+                        title = Kora.lang('garbage.title'),
+                        message = Kora.lang('garbage.finish_stops'),
                         type = 'warning',
                     })
                     return
@@ -295,8 +295,8 @@ local function addTruckTarget()
                 local coords = GetEntityCoords(garbage.truck)
                 if #(coords - Garbage.Locations.main) > Garbage.ReturnDistance then
                     Kora.notify.send({
-                        title = 'Garbage',
-                        message = 'You need to bring the truck back to the depot.',
+                        title = Kora.lang('garbage.title'),
+                        message = Kora.lang('garbage.return_depot'),
                         type = 'warning',
                     })
                     return
@@ -315,8 +315,8 @@ local function addTruckTarget()
 
                 if type(returned) == 'number' then
                     Kora.notify.send({
-                        title = 'Garbage',
-                        message = ('You were paid $%s for your garbage route.'):format(returned),
+                        title = Kora.lang('garbage.title'),
+                        message = Kora.lang('garbage.route_paid', returned),
                         type = 'success',
                     })
                 end
@@ -355,8 +355,8 @@ local function spawnTruck()
     if not route then
         garbage.busy = false
         Kora.notify.send({
-            title = 'Garbage',
-            message = 'You are already on a garbage route.',
+            title = Kora.lang('garbage.title'),
+            message = Kora.lang('garbage.already_route'),
             type = 'error',
         })
         return
@@ -397,8 +397,8 @@ local function spawnTruck()
         garbage.truck = nil
         garbage.busy = false
         Kora.notify.send({
-            title = 'Garbage',
-            message = 'Unable to start the route. Please try again.',
+            title = Kora.lang('garbage.title'),
+            message = Kora.lang('garbage.route_failed'),
             type = 'error',
         })
         return
@@ -415,8 +415,8 @@ local function spawnTruck()
     garbage.busy = false
 
     Kora.notify.send({
-        title = 'Garbage',
-        message = 'Your truck is ready. Follow the route to the first stop.',
+        title = Kora.lang('garbage.title'),
+        message = Kora.lang('garbage.truck_ready'),
         type = 'success',
     })
 end
@@ -432,7 +432,7 @@ local function setUpPed()
         exports.kora_target:addEntity(ped, {
             {
                 icon = 'fas fa-hand-paper',
-                label = 'Start Garbage Route',
+                label = Kora.lang('garbage.start_route'),
                 onSelect = function()
                     spawnTruck()
                 end,

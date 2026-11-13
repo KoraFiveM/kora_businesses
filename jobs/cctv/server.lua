@@ -56,14 +56,14 @@ end
 
 if not Kora.shared.get('items', Cctv.laptopItem) then
     local registered, err = Kora.shared.register('items', Cctv.laptopItem, {
-        label = 'CCTV Engineer Laptop',
+        label = Kora.lang('cctv.laptop'),
         weight = 1500,
         type = 'item',
         image = 'laptop.png',
         unique = true,
         useable = true,
         shouldClose = true,
-        description = 'Access the CCTV systems installed by your company.',
+        description = Kora.lang('cctv.laptop_description'),
     })
     if not registered then print(('^1[kora_businesses]^7 CCTV laptop registration failed: %s'):format(err or 'unknown error')) end
 end
@@ -79,7 +79,7 @@ end
 
 exports.kora_inventory:CreateUsableItem(Cctv.laptopItem, function(src)
     if not playerJob(src) then
-        return false, 'You must be an on-duty CCTV engineer to use this laptop.'
+        return false, Kora.lang('cctv.on_duty_laptop')
     end
     TriggerClientEvent('kora_businesses:cctv:openLaptop', src)
     return true
@@ -109,7 +109,7 @@ local function amount(value)
 end
 
 local function notify(src, message, kind)
-    Kora.notify.send(src, { title = 'CCTV', message = message, type = kind or 'error' })
+    Kora.notify.send(src, { title = Kora.lang('cctv.title'), message = message, type = kind or 'error' })
 end
 
 local function engineerOnline()
@@ -130,16 +130,16 @@ local function customerJob(src, business)
 end
 
 local function customer(src, data)
-    if type(data) ~= 'table' then return nil, 'Invalid customer data.' end
+    if type(data) ~= 'table' then return nil, Kora.lang('cctv.invalid_customer') end
     if data.customerType == 'residential' then
         local player = exports.kora_core:getPlayer(src)
         if not player or type(data.citizenid) ~= 'string' or data.citizenid ~= player.citizenid then
-            return nil, 'You are not authorised for that home.'
+            return nil, Kora.lang('cctv.unauthorised_home')
         end
         return { type = 'residential', citizenid = player.citizenid }
     end
     if data.customerType ~= 'business' or not customerJob(src, data.business) then
-        return nil, 'You are not authorised for that business.'
+        return nil, Kora.lang('cctv.unauthorised_business')
     end
     return { type = 'business', business = data.business }
 end
@@ -180,26 +180,26 @@ end
 
 local function calloutFor(src, id)
     local callout = callouts[id]
-    if not callout then return nil, 'That CCTV call-out does not exist.' end
+    if not callout then return nil, Kora.lang('cctv.callout_missing') end
     if callout.business ~= (exports.kora_core:getJob(src) or {}).name and not playerJob(src) then
-        return nil, 'You are not authorised to manage this call-out.'
+        return nil, Kora.lang('cctv.unauthorised_callout')
     end
     return callout
 end
 
 Kora.callback.register('kora_businesses:cctv:requestCallout', function(src, data)
-    if not Cctv.callouts.enabled then return false, 'Emergency CCTV call-outs are unavailable.' end
-    if type(data) ~= 'table' or not validIssue(data.issue) then return false, 'Choose a valid CCTV issue.' end
+    if not Cctv.callouts.enabled then return false, Kora.lang('cctv.callouts_unavailable') end
+    if type(data) ~= 'table' or not validIssue(data.issue) then return false, Kora.lang('cctv.choose_issue') end
     local account, customerError = customer(src, data)
     if not account then return false, customerError end
     if Cctv.callouts.requireEngineerOnline and not engineerOnline() then
-        return false, 'No CCTV engineer is currently available.'
+        return false, Kora.lang('cctv.no_engineer')
     end
 
     local charge = amount(Cctv.callouts.charge)
-    if not charge then return false, 'The CCTV call-out charge is invalid.' end
+    if not charge then return false, Kora.lang('cctv.invalid_callout_charge') end
     if charge > 0 and not debitCustomer(src, account, charge, 'cctv-emergency-callout') then
-        return false, 'The business cannot afford the call-out charge.'
+        return false, Kora.lang('cctv.business_cannot_afford_callout')
     end
 
     nextCalloutId = nextCalloutId + 1
@@ -229,7 +229,7 @@ Kora.callback.register('kora_businesses:cctv:listCallouts', function(src)
 end)
 
 Kora.callback.register('kora_businesses:cctv:laptopData', function(src)
-    if not playerJob(src) then return nil, 'You must be an on-duty CCTV engineer.' end
+    if not playerJob(src) then return nil, Kora.lang('cctv.on_duty_engineer') end
     local result = {}
     for _, callout in pairs(callouts) do result[#result + 1] = callout end
     local systems = Kora.sql.query('SELECT `id`, `business`, `business_label`, `camera_count`, `status` FROM `kora_businesses_cctv_systems` WHERE `installer_business` = ?', { Cctv.job }) or {}
@@ -237,32 +237,32 @@ Kora.callback.register('kora_businesses:cctv:laptopData', function(src)
 end)
 
 Kora.callback.register('kora_businesses:cctv:acceptCallout', function(src, id)
-    if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
+    if not playerJob(src) then return false, Kora.lang('cctv.on_duty_engineer') end
     local callout = callouts[id]
     if not callout or (callout.status ~= 'open' and callout.status ~= 'pending') then
-        return false, 'That call-out is no longer available.'
+        return false, Kora.lang('cctv.callout_no_longer_available')
     end
     callout.status, callout.engineer = 'accepted', src
     return true, callout
 end)
 
 Kora.callback.register('kora_businesses:cctv:completeCallout', function(src, id)
-    if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
+    if not playerJob(src) then return false, Kora.lang('cctv.on_duty_engineer') end
     local callout = callouts[id]
     if not callout or callout.status ~= 'accepted' or callout.engineer ~= src then
-        return false, 'That call-out is not assigned to you.'
+        return false, Kora.lang('cctv.callout_unassigned')
     end
     local price = repairPrice(callout.issue)
-    if not price then return false, 'The CCTV repair price is invalid.' end
+    if not price then return false, Kora.lang('cctv.invalid_repair_price') end
     local account = { type = callout.customerType, business = callout.business, citizenid = callout.citizenid }
     local payer = callout.requester
     if price > 0 and not debitCustomer(payer, account, price, 'cctv-' .. callout.issue .. '-repair') then
-        return false, 'The business cannot afford the repair.'
+        return false, Kora.lang('cctv.business_cannot_afford_repair')
     end
     local paid = callout.charge + price
     if paid > 0 and not exports.kora_banking:AddMoney(Cctv.job, paid, 'cctv-callout-completed') then
         if price > 0 then refundCustomer(payer, account, price, 'cctv-repair-refund') end
-        return false, 'The CCTV company account could not be credited.'
+        return false, Kora.lang('cctv.account_credit_failed')
     end
     callout.status = 'completed'
     callout.repairPrice = price
@@ -270,11 +270,11 @@ Kora.callback.register('kora_businesses:cctv:completeCallout', function(src, id)
 end)
 
 Kora.callback.register('kora_businesses:cctv:beginHack', function(src, data)
-    if not Cctv.hacking.enabled then return false, 'CCTV hacking is disabled.' end
+    if not Cctv.hacking.enabled then return false, Kora.lang('cctv.hacking_disabled') end
     if type(data) ~= 'table' or type(data.targetId) ~= 'string' or #data.targetId > 80 then
-        return false, 'Invalid CCTV target.'
+        return false, Kora.lang('cctv.invalid_target')
     end
-    if hackSessions[src] then return false, 'You are already hacking a CCTV system.' end
+    if hackSessions[src] then return false, Kora.lang('cctv.already_hacking') end
     local level = systemSecurity(data.targetId)
     local options = {}
     for key, value in pairs(Cctv.hacking.options) do options[key] = value end
@@ -297,12 +297,12 @@ Kora.callback.register('kora_businesses:cctv:finishHack', function(src, data)
     hackSessions[src] = nil
     if not session or session.expires < GetGameTimer() then
         if session then setBucket(src, session.previousBucket) end
-        return false, 'That hacking session expired.'
+        return false, Kora.lang('cctv.hack_expired')
     end
     setBucket(src, session.previousBucket)
     local proof = type(data) == 'table' and data.proof or nil
     if type(proof) ~= 'string' or not Kora.minigames.consumeProof(src, proof, Cctv.hacking.game, session.authorization) then
-        return false, 'The CCTV hack failed.'
+        return false, Kora.lang('cctv.hack_failed')
     end
     local hacking = Kora.skills.get(src, Cctv.hacking.skill)
     local intrusion = hacking and math.max(1, math.floor((tonumber(hacking.level) or 1) / 10)) or 1
@@ -311,10 +311,10 @@ Kora.callback.register('kora_businesses:cctv:finishHack', function(src, data)
 end)
 
 Kora.callback.register('kora_businesses:cctv:beginRepairCheck', function(src, data)
-    if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
-    if not Cctv.repairChecks.enabled or type(data) ~= 'table' then return false, 'Repair checks are unavailable.' end
+    if not playerJob(src) then return false, Kora.lang('cctv.on_duty_engineer') end
+    if not Cctv.repairChecks.enabled or type(data) ~= 'table' then return false, Kora.lang('cctv.repair_checks_unavailable') end
     local level = systemSecurity(data.targetId)
-    if repairSessions[src] then return false, 'You are already repairing a CCTV system.' end
+    if repairSessions[src] then return false, Kora.lang('cctv.already_repairing') end
     local options = {
         nodeCount = Cctv.repairChecks.baseNodes + (level - 1) * Cctv.repairChecks.nodesPerSecurityLevel,
         timeLimit = 30000,
@@ -327,10 +327,10 @@ end)
 Kora.callback.register('kora_businesses:cctv:finishRepairCheck', function(src, data)
     local session = repairSessions[src]
     repairSessions[src] = nil
-    if not session or session.expires < GetGameTimer() then return false, 'That repair check expired.' end
+    if not session or session.expires < GetGameTimer() then return false, Kora.lang('cctv.repair_check_expired') end
     local proof = type(data) == 'table' and data.proof or nil
     if type(proof) ~= 'string' or not Kora.minigames.consumeProof(src, proof, Cctv.repairChecks.game, session.authorization) then
-        return false, 'The repair check failed.'
+        return false, Kora.lang('cctv.repair_check_failed')
     end
     return true, { targetId = session.targetId }
 end)
@@ -351,7 +351,7 @@ CreateThread(function()
             if session.expires < now then
                 setBucket(src, session.previousBucket)
                 hackSessions[src] = nil
-                notify(src, 'Your CCTV hacking session expired.', 'error')
+                notify(src, Kora.lang('cctv.hacking_session_expired'), 'error')
             end
         end
         for src, session in pairs(repairSessions) do
@@ -361,10 +361,10 @@ CreateThread(function()
 end)
 
 Kora.callback.register('kora_businesses:cctv:declineCallout', function(src, id)
-    if not playerJob(src) then return false, 'You must be an on-duty CCTV engineer.' end
+    if not playerJob(src) then return false, Kora.lang('cctv.on_duty_engineer') end
     local callout = callouts[id]
     if not callout or callout.status ~= 'accepted' or callout.engineer ~= src then
-        return false, 'That call-out is not assigned to you.'
+        return false, Kora.lang('cctv.callout_unassigned')
     end
     callout.status, callout.engineer = 'open', nil
     return true, callout

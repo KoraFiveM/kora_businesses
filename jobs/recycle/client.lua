@@ -204,7 +204,7 @@ local function SetLocationBlip()
         color = 2,
         scale = 0.8,
         shortRange = true,
-        label = 'Recycle Center'
+        label = Kora.lang('recycle.title')
     })
 end
 
@@ -224,14 +224,14 @@ end
 
 local function toggleDuty()
     if onDuty then
-        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.text.clock_out'), type = 'success' })
+        Kora.notify.send({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.text.clock_out'), type = 'success' })
         onDuty = false
         TriggerServerEvent('kora_businesses:recycle:cancelPickup')
         DropPackage()
         packageCoords = nil
         refreshOutlines()
     else
-        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.text.clock_in'), type = 'success' })
+        Kora.notify.send({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.text.clock_in'), type = 'success' })
         onDuty = true
         GetRandomPackage()
     end
@@ -258,7 +258,7 @@ local function pickUp()
     isBusy = false
     if not carried then
         TriggerServerEvent('kora_businesses:recycle:cancelPickup')
-        Kora.notify.send({ title = 'Recycle Center', message = Kora.lang('recycle.error.carry_failed'), type = 'error' })
+        Kora.notify.send({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.error.carry_failed'), type = 'error' })
         return
     end
     packageCoords = nil

@@ -2,7 +2,7 @@ local permits = {}
 local permitCounter = 0
 
 local function notify(src, message, kind)
-    Kora.notify.send(src, { title = 'Vehicle service', message = message, type = kind or 'error' })
+    Kora.notify.send(src, { title = Kora.lang('mechanic.title'), message = message, type = kind or 'error' })
 end
 
 local function getVehicle(src, netId)
@@ -35,27 +35,27 @@ end
 
 local function canPerform(src, action, vehicle)
     local job = roleFor(src)
-    if not job then return false, 'You must be on duty to do that.' end
+    if not job then return false, Kora.lang('mechanic.on_duty') end
 
     local isRoadside = Mechanic.roles.roadsideJobs[job.name] == true
     local isAutomotive = job.name == Mechanic.roles.fullRepairJob or job.type == Mechanic.roles.automotiveType
     local isBodyshop = Mechanic.roles.bodyshopJobs[job.name] == true or Mechanic.roles.bodyshopTypes[job.type] == true
 
     if action == 'fullRepair' then
-        if not isAutomotive or isRoadside then return false, 'Only a qualified mechanic can complete a full repair.' end
-        if not nearGarage(vehicle) then return false, 'A full repair must be completed in a Mechanicured garage bay.' end
+        if not isAutomotive or isRoadside then return false, Kora.lang('mechanic.qualified_repair') end
+        if not nearGarage(vehicle) then return false, Kora.lang('mechanic.repair_bay') end
         return true
     end
     if action == 'roadsideRepair' then
-        if not isAutomotive then return false, 'Only automotive staff can stabilise a vehicle.' end
+        if not isAutomotive then return false, Kora.lang('mechanic.automotive_stabilise') end
         return true
     end
     if action == 'paint' or action == 'bumpers' then
-        if not isBodyshop then return false, 'Only bodyshop staff can change vehicle cosmetics.' end
-        if not inShopZone(vehicle) then return false, 'Cosmetic work must be done at a mechanic shop.' end
+        if not isBodyshop then return false, Kora.lang('mechanic.bodyshop_cosmetics') end
+        if not inShopZone(vehicle) then return false, Kora.lang('mechanic.cosmetic_shop') end
         return true
     end
-    return false, 'Unknown vehicle service action.'
+    return false, Kora.lang('mechanic.unknown_action')
 end
 
 local function itemCost(action)
@@ -89,7 +89,7 @@ end
 
 Kora.callback.register('kora_businesses:mechanic:permit', function(src, action, netId)
     local vehicle = getVehicle(src, netId)
-    if not vehicle then return false, 'Move closer to a valid vehicle.' end
+    if not vehicle then return false, Kora.lang('mechanic.valid_vehicle') end
     local allowed, reason = canPerform(src, action, vehicle)
     if not allowed then return false, reason end
     return true, makePermit(src, action, netId)
