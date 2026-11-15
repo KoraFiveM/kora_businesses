@@ -2,7 +2,7 @@ local Stock = {}      -- Stock[citizenid] = { common = n, rare = n, exotic = n }
 local Working = {}    -- Working[citizenid] = true while the deposit is held
 local Preparing = {}  -- Preparing[citizenid] = true while a prepare round is live, blocks overlap
 local function fail(msg)
-    Kora.print.error(msg)
+    Kora.logging.warn('hotdog.action_refused', 'Hotdog action refused', { reason = tostring(msg) })
     return false
 end
 local function player(src) 

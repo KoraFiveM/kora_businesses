@@ -65,7 +65,7 @@ if not Kora.shared.get('items', Cctv.laptopItem) then
         shouldClose = true,
         description = Kora.lang('cctv.laptop_description'),
     })
-    if not registered then print(('^1[kora_businesses]^7 CCTV laptop registration failed: %s'):format(err or 'unknown error')) end
+    if not registered then Kora.logging.error('cctv.laptop_registration_failed', 'CCTV laptop registration failed', { error = tostring(err or 'unknown error') }) end
 end
 
 local function playerJob(src)
@@ -87,17 +87,17 @@ end)
 
 CreateThread(function()
     if not Kora.sql.ready(60000) then
-        print('^1[kora_businesses]^7 kora_sql was not ready; CCTV persistence is disabled.')
+        Kora.logging.error('cctv.sql_not_ready', 'kora_sql was not ready; CCTV persistence is disabled')
         return
     end
     local reports, err = Kora.sql.ensureTables(KoraBusinessesCctvSchema)
     if err then
-        print(('^1[kora_businesses]^7 CCTV schema failed: %s'):format(err))
+        Kora.logging.error('cctv.schema_failed', 'CCTV schema setup failed', { error = tostring(err) })
         return
     end
     for _, report in ipairs(reports or {}) do
         for _, warning in ipairs(report.warnings or {}) do
-            print(('^3[kora_businesses]^7 CCTV schema %s: %s'):format(report.table, warning))
+            Kora.logging.warn('cctv.schema_warning', 'CCTV schema reported a table warning', { table = tostring(report.table), warning = tostring(warning) })
         end
     end
 end)

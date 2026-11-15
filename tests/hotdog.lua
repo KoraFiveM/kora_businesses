@@ -15,7 +15,7 @@ local callbacks, logs = {}, {}
 local authorizations, debits, refunds = 0, 0, 0
 env.Kora = {
     callback = { register = function(name, fn) callbacks[name] = fn end },
-    print = { error = function(message) logs[#logs + 1] = message end },
+    logging = { warn = function(event, _, fields) logs[#logs + 1] = event .. ':' .. tostring(fields.reason) end },
     lang = function(key) return key end,
     minigames = { authorizeProof = function()
         authorizations = authorizations + 1

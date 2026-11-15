@@ -12,7 +12,9 @@ local cacheListeners, timeouts = {}, {}
 
 local function newEntity() nextHandle = nextHandle + 1; entities[nextHandle] = true; return nextHandle end
 
+local loggerCalls = {}
 local Kora = {
+    logging = { error = function(event, message, fields) loggerCalls[#loggerCalls + 1] = { event = event, message = message, fields = fields } end },
     cache = {
         isDead = function() return state.dead end,
         ped = function() return state.ped end,
@@ -181,6 +183,8 @@ serverEvents = {}
 pickupTarget.onSelect()
 assert(not dropTarget.canInteract(), 'no carry state when the model failed to load')
 assert(notifications[#notifications] and notifications[#notifications].type == 'error', 'player is told the pickup failed')
+assert(loggerCalls[1] and loggerCalls[1].event == 'recycle.carry_prop_failed', 'failed model load logs recycle.carry_prop_failed')
+assert(tostring(loggerCalls[1].fields.reason):find('timeout', 1, true), 'logger fields carry the failure reason')
 assert(count(serverEvents, 'kora_businesses:recycle:cancelPickup') >= 1, 'failed pickup releases the server authorization')
 state.modelOk = true
 
