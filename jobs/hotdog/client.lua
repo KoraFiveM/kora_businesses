@@ -56,7 +56,7 @@ local function runExclusive(fn)
     isBusy = true
     local ok, err = pcall(fn)
     isBusy = false
-    if not ok then print(('[qb-hotdogjob] %s'):format(tostring(err))) end
+    if not ok then Kora.logging.error('hotdog.action_failed', 'Hotdog action failed', { error = tostring(err) }) end
 end
 
 local function isHotdogJob()

@@ -12,6 +12,7 @@ local threads, handlers, startHandlers = {}, {}, {}
 local registrations, driving = 0, false
 local samples, resets = 0, 0
 env.Kora = {
+    logging = { error = function() end },
     cache = {
         onChange = function(key, fn) registrations = registrations + 1; handlers[key] = fn end,
     },

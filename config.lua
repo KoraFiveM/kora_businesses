@@ -80,7 +80,7 @@ for _, job in ipairs(Config.enable) do
         requireAll(paths.shared)
         requireAll(isServer and paths.server or paths.client)
     else
-        print(('[jobs] %s is disabled, skipping'):format(job.name))
+        Kora.logging.info('jobs.disabled_skipped', 'Job is disabled, skipping', { job = job.name })
     end
 end
 

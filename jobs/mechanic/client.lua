@@ -277,7 +277,7 @@ local function registerTargets()
         mechanicTargetId = id
         return true
     end
-    print('[kora_businesses] mechanic target registration failed: ' .. tostring(id))
+    Kora.logging.error('mechanic.target_registration_failed', 'Mechanic target registration failed', { error = tostring(id) })
     return false
 end
 

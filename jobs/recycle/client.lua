@@ -135,7 +135,7 @@ Kora.cache.onChange('coords', function()
 end)
 
 local function fail(reason)
-    print(('[kora_businesses:recycle] carry prop failed: %s'):format(reason))
+    Kora.logging.error('recycle.carry_prop_failed', 'Carry prop failed', { reason = tostring(reason) })
     return false
 end
 
