@@ -222,7 +222,7 @@ local function completeSale(ped, quality, amount)
     stock[quality] = stock[quality] - amount
     refreshUI()
 
-    local result, reason = Kora.callback.trigger('qb-hotdogjob:sell', NetworkGetNetworkIdFromEntity(ped), quality, amount)
+    local result, reason = Kora.callback.trigger('qb-hotdogjob:sell', NetworkGetEntityIsNetworked(ped) and NetworkGetNetworkIdFromEntity(ped) or 0, quality, amount)
     if not result then
         if reason then
             stock[quality] = 0
