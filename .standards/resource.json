@@ -18,7 +18,8 @@
       "jobs/mechanic/server.lua",
       "jobs/recycle/server.lua",
       "jobs/taxi/server.lua",
-      "jobs/tow/server.lua"
+      "jobs/tow/server.lua",
+      "kora_versioncheck.lua"
     ],
     "shared": [
       "businesses.config.local.lua",
