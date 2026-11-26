@@ -389,7 +389,7 @@ local function letGoOfStand()
     isPushing = false
 
     if pushPromptId then
-        Kora.textui.hide(pushPromptId)
+        Kora.bridge.hideText(pushPromptId)
         pushPromptId = nil
     end
 
@@ -406,7 +406,7 @@ local function letGoOfStand()
 end
 
 local function keepPushAnimation()
-    pushPromptId = Kora.textui.show('[G] To let go of the stand')
+    pushPromptId = Kora.bridge.drawText('[G] To let go of the stand')
 
     CreateThread(function()
         while isPushing do
