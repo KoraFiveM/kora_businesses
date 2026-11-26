@@ -149,7 +149,7 @@ local function debitCustomer(src, account, value, reason)
     if account.type == 'residential' then
         return exports.kora_core:removeMoney(src, 'bank', value, reason)
     end
-    return exports.kora_banking:RemoveMoney(account.business, value, reason)
+    return Kora.bridge.removeSocietyMoney(account.business, value, reason)
 end
 
 local function refundCustomer(src, account, value, reason)
@@ -157,7 +157,7 @@ local function refundCustomer(src, account, value, reason)
     if account.type == 'residential' then
         return exports.kora_core:addMoney(src, 'bank', value, reason)
     end
-    return exports.kora_banking:AddMoney(account.business, value, reason)
+    return Kora.bridge.addSocietyMoney(account.business, value, reason)
 end
 
 local function accountKey(account)
