@@ -26,7 +26,7 @@ local function setUpPickup(data)
     pickupVeh = CreateVehicle(vehicle, loc, 0.0, true, true)
     SetModelAsNoLongerNeeded(vehicle)
     pickupBlip = AddBlipForEntity(pickupVeh)
-    Kora.notify.send({
+    Kora.bridge.sendNotify({
         title = Kora.lang('tow.title'),
         message = Kora.lang('tow.new_vehicle'),
         type = 'success'
@@ -51,7 +51,7 @@ local function setUpPickup(data)
                     end
                     AttachEntityToEntity(pickupVeh, veh, GetEntityBoneIndexByName(veh, 'bodyshell'), 0.0, -1.5 + -0.85, 0.0 + 1.15, 0, 0, 0, 1, 1, 0, 1, 0, 1)
                     towAttached = true
-                    Kora.notify.send({
+                    Kora.bridge.sendNotify({
                         title = Kora.lang('tow.title'),
                         message = Kora.lang('tow.return_yard'),
                         type = 'success'

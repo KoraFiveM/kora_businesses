@@ -104,7 +104,7 @@ AddEventHandler('onClientResourceStop', function(resource)
 end)
 
 local function notify(message, kind)
-    Kora.notify.send({ title = Kora.lang('mechanic.title'), message = message, type = kind or 'info' })
+    Kora.bridge.sendNotify({ title = Kora.lang('mechanic.title'), message = message, type = kind or 'info' })
 end
 
 local function playerJob()

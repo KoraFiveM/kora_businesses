@@ -144,7 +144,7 @@ local function addStopZone(stopId)
                     end
 
                     if garbage.bagObject then
-                        Kora.notify.send({
+                        Kora.bridge.sendNotify({
                             title = Kora.lang('garbage.title'),
                             message = Kora.lang('garbage.already_carrying'),
                             type = 'warning',
@@ -211,7 +211,7 @@ local function addTruckTarget()
                 if garbage.busy then return end
 
                 if not garbage.bagObject then
-                    Kora.notify.send({
+                    Kora.bridge.sendNotify({
                         title = Kora.lang('garbage.title'),
                         message = Kora.lang('garbage.not_carrying'),
                         type = 'warning',
@@ -253,14 +253,14 @@ local function addTruckTarget()
                         local nextStop = garbage.route and garbage.route[garbage.routeIndex]
                         if nextStop then
                             setupStop(nextStop.stop, nextStop.bags)
-                            Kora.notify.send({
+                            Kora.bridge.sendNotify({
                                 title = Kora.lang('garbage.title'),
                                 message = Kora.lang('garbage.stop_complete'),
                                 type = 'success',
                             })
                         else
                             createDepotBlip(Config.GarbageDepotRoute ~= false)
-                            Kora.notify.send({
+                            Kora.bridge.sendNotify({
                                 title = Kora.lang('garbage.title'),
                                 message = Kora.lang('garbage.all_stops_complete', #garbage.route),
                                 type = 'success',
@@ -284,7 +284,7 @@ local function addTruckTarget()
                 if garbage.busy then return end
 
                 if not garbage.route or garbage.route[garbage.routeIndex] then
-                    Kora.notify.send({
+                    Kora.bridge.sendNotify({
                         title = Kora.lang('garbage.title'),
                         message = Kora.lang('garbage.finish_stops'),
                         type = 'warning',
@@ -294,7 +294,7 @@ local function addTruckTarget()
 
                 local coords = GetEntityCoords(garbage.truck)
                 if #(coords - Garbage.Locations.main) > Garbage.ReturnDistance then
-                    Kora.notify.send({
+                    Kora.bridge.sendNotify({
                         title = Kora.lang('garbage.title'),
                         message = Kora.lang('garbage.return_depot'),
                         type = 'warning',
@@ -314,7 +314,7 @@ local function addTruckTarget()
                 createDepotBlip(false)
 
                 if type(returned) == 'number' then
-                    Kora.notify.send({
+                    Kora.bridge.sendNotify({
                         title = Kora.lang('garbage.title'),
                         message = Kora.lang('garbage.route_paid', returned),
                         type = 'success',
@@ -354,7 +354,7 @@ local function spawnTruck()
     local route = Kora.callback.trigger('qb-garbagejob:spawnTruck')
     if not route then
         garbage.busy = false
-        Kora.notify.send({
+        Kora.bridge.sendNotify({
             title = Kora.lang('garbage.title'),
             message = Kora.lang('garbage.already_route'),
             type = 'error',
@@ -396,7 +396,7 @@ local function spawnTruck()
         end
         garbage.truck = nil
         garbage.busy = false
-        Kora.notify.send({
+        Kora.bridge.sendNotify({
             title = Kora.lang('garbage.title'),
             message = Kora.lang('garbage.route_failed'),
             type = 'error',
@@ -414,7 +414,7 @@ local function spawnTruck()
     addTruckTarget()
     garbage.busy = false
 
-    Kora.notify.send({
+    Kora.bridge.sendNotify({
         title = Kora.lang('garbage.title'),
         message = Kora.lang('garbage.truck_ready'),
         type = 'success',
