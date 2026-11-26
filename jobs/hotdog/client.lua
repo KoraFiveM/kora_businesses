@@ -48,7 +48,7 @@ local QUALITY_META = {
 }
 
 local function notify(message, notifyType)
-    Kora.notify.send({ message = message, type = notifyType or 'info' })
+    Kora.bridge.sendNotify({ message = message, type = notifyType or 'info' })
 end
 
 local function runExclusive(fn)

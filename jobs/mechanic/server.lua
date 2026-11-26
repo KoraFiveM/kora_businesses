@@ -2,7 +2,7 @@ local permits = {}
 local permitCounter = 0
 
 local function notify(src, message, kind)
-    Kora.notify.send(src, { title = Kora.lang('mechanic.title'), message = message, type = kind or 'error' })
+    Kora.bridge.sendNotify(src, { title = Kora.lang('mechanic.title'), message = message, type = kind or 'error' })
 end
 
 local function getVehicle(src, netId)

@@ -109,7 +109,7 @@ local function amount(value)
 end
 
 local function notify(src, message, kind)
-    Kora.notify.send(src, { title = Kora.lang('cctv.title'), message = message, type = kind or 'error' })
+    Kora.bridge.sendNotify(src, { title = Kora.lang('cctv.title'), message = message, type = kind or 'error' })
 end
 
 local function engineerOnline()

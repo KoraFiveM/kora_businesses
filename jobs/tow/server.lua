@@ -14,7 +14,7 @@ Kora.callback.register('qb-tow:server:TakeOutVehicle', function(source)
 
     if job.name ~= 'tow' then return end
 
-    exports.kora_vehiclekeys:giveKeys(source, 'TOW', true)
+    Kora.bridge.giveKeys(source, 'TOW', true)
 
     towDrivers[source] = {
         location = getNewLocation(),
@@ -57,7 +57,7 @@ Kora.callback.register('qb-tow:server:ReturnVehicle', function(source)
 
     if towDrivers[source].droppedOff > 0 then
         exports.kora_core:addMoney(source, 'bank', towDrivers[source].droppedOff * Tow.payPerVehicle)
-        Kora.notify.send(source, {
+        Kora.bridge.sendNotify(source, {
             title = Kora.lang('tow.title'),
             message = Kora.lang('tow.payout',
                 towDrivers[source].droppedOff * Tow.payPerVehicle,

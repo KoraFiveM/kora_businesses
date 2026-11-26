@@ -15,7 +15,7 @@ end
 local function sellMaterials()
     local itemList = Kora.callback.trigger('kora_businesses:recycle:getPriceList')
     if not itemList then
-        Kora.notify.send({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.error.too_far_to_sell'), type = 'error' })
+        Kora.bridge.sendNotify({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.error.too_far_to_sell'), type = 'error' })
         return
     end
 
@@ -111,7 +111,7 @@ local function sellMaterials()
 
             local refreshedItems = buildItems()
             if #refreshedItems == 0 then
-                Kora.notify.send({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.error.nothing_to_sell'), type = 'error' })
+                Kora.bridge.sendNotify({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.error.nothing_to_sell'), type = 'error' })
                 return
             end
 
@@ -121,7 +121,7 @@ local function sellMaterials()
     })
 
     if #items == 0 then
-        Kora.notify.send({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.error.nothing_to_sell'), type = 'error' })
+        Kora.bridge.sendNotify({ title = Kora.lang('recycle.title'), message = Kora.lang('recycle.error.nothing_to_sell'), type = 'error' })
         return
     end
 

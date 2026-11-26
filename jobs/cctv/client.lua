@@ -6,11 +6,11 @@ local active = false
 local function hack(targetId)
     local started, data = Kora.callback.trigger('kora_businesses:cctv:beginHack', { targetId = targetId })
     if not started then
-        return Kora.notify.send({ title = Kora.lang('cctv.title'), message = data or Kora.lang('cctv.start_hack_failed'), type = 'error' })
+        return Kora.bridge.sendNotify({ title = Kora.lang('cctv.title'), message = data or Kora.lang('cctv.start_hack_failed'), type = 'error' })
     end
     local result = Kora.minigames.play(Cctv.hacking.game, nil, data.authorization)
     local success, response = Kora.callback.trigger('kora_businesses:cctv:finishHack', { proof = result and result.proof })
-    Kora.notify.send({
+    Kora.bridge.sendNotify({
         title = Kora.lang('cctv.title'),
         message = success and Kora.lang('cctv.access_granted', response.targetId) or (response or Kora.lang('cctv.hack_failed_client')),
         type = success and 'success' or 'error',
@@ -21,10 +21,10 @@ local function repair(targetId)
     local started, data = Kora.callback.trigger('kora_businesses:cctv:beginRepairCheck', {
         targetId = targetId,
     })
-    if not started then return Kora.notify.send({ title = Kora.lang('cctv.title'), message = data or Kora.lang('cctv.start_repair_failed'), type = 'error' }) end
+    if not started then return Kora.bridge.sendNotify({ title = Kora.lang('cctv.title'), message = data or Kora.lang('cctv.start_repair_failed'), type = 'error' }) end
     local result = Kora.minigames.play(Cctv.repairChecks.game, nil, data.authorization)
     local success, response = Kora.callback.trigger('kora_businesses:cctv:finishRepairCheck', { proof = result and result.proof })
-    Kora.notify.send({ title = Kora.lang('cctv.title'), message = success and Kora.lang('cctv.repair_check_passed', response.targetId) or (response or Kora.lang('cctv.repair_check_failed')), type = success and 'success' or 'error' })
+    Kora.bridge.sendNotify({ title = Kora.lang('cctv.title'), message = success and Kora.lang('cctv.repair_check_passed', response.targetId) or (response or Kora.lang('cctv.repair_check_failed')), type = success and 'success' or 'error' })
 end
 
 RegisterCommand('cctvhack', function(_, args)
@@ -50,7 +50,7 @@ local function openLaptop()
     CreateThread(function()
         local data, err = Kora.callback.trigger('kora_businesses:cctv:laptopData')
         if not data then
-            Kora.notify.send({ title = Kora.lang('cctv.title'), message = err or Kora.lang('cctv.access_denied'), type = 'error' })
+            Kora.bridge.sendNotify({ title = Kora.lang('cctv.title'), message = err or Kora.lang('cctv.access_denied'), type = 'error' })
             active = false
             return
         end

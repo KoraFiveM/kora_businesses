@@ -27,7 +27,7 @@ end
 local function spawnPickup()
     local data = Kora.callback.trigger('qb-taxi:getPickupLocation')
     if not data then
-        Kora.notify.send({ title = Kora.lang('taxi.title'), message = Kora.lang('taxi.on_duty'), type = 'error' })
+        Kora.bridge.sendNotify({ title = Kora.lang('taxi.title'), message = Kora.lang('taxi.on_duty'), type = 'error' })
         return false
     end
     pickupLocation = data.pickup
