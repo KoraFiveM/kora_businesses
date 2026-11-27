@@ -185,7 +185,7 @@ local function beginService(action, vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     local payload = servicePayload(action, vehicle)
     if payload == nil then return end
-    local netId = NetworkGetNetworkIdFromEntity(vehicle)
+    local netId = NetworkGetEntityIsNetworked(vehicle) and NetworkGetNetworkIdFromEntity(vehicle) or 0
     if not netId or netId == 0 then return notify('This vehicle is not networked and cannot be serviced.', 'error') end
 
     local allowed, permitOrReason = Kora.callback.trigger('kora_businesses:mechanic:permit', action, netId)
